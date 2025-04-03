@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { Register } from '../components/Register';
 import { authService } from '../services/authService';
 
+
 // Mock the auth service
 jest.mock('../services/authService', () => ({
   authService: {
@@ -11,10 +12,16 @@ jest.mock('../services/authService', () => ({
   }
 }));
 
+// То же самое и здесь, жаловался на пропсы
 // Mock useNavigate
 const mockedNavigate = jest.fn();
+const MockBrowserRouter = ({ children }) => <div>{children}</div>;
+MockBrowserRouter.propTypes = 
+{
+  children: PropTypes.node,
+};
 jest.mock('react-router-dom', () => ({
-  BrowserRouter: ({ children }) => <div>{children}</div>,
+  BrowserRouter: MockBrowserRouter,
   useNavigate: () => mockedNavigate
 }));
 
@@ -31,7 +38,6 @@ describe('Register Component', () => {
     );
     
     expect(screen.getByText(/Регистрация/i)).toBeInTheDocument();
-    // Используем getByPlaceholderText вместо getByLabelText
     expect(screen.getByPlaceholderText(/Имя пользователя/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Email/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Пароль/i)).toBeInTheDocument();
@@ -81,7 +87,6 @@ describe('Register Component', () => {
     
     await waitFor(() => {
       expect(authService.register).toHaveBeenCalledWith('testuser', 'test@example.com', 'password123');
-      // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
       expect(mockedNavigate).toHaveBeenCalledWith('/login');
     });
   });

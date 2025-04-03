@@ -11,10 +11,16 @@ jest.mock('../services/authService', () => ({
   }
 }));
 
+// ESLint жаловался на пропсы
 // Mock useNavigate
 const mockedNavigate = jest.fn();
+const MockBrowserRouter = ({ children }) => <div>{children}</div>;
+MockBrowserRouter.propTypes = 
+{
+  children: PropTypes.node,
+};
 jest.mock('react-router-dom', () => ({
-  BrowserRouter: ({ children }) => <div>{children}</div>,
+  BrowserRouter: MockBrowserRouter,
   useNavigate: () => mockedNavigate
 }));
 
@@ -31,7 +37,6 @@ describe('Login Component', () => {
     );
     
     expect(screen.getByText(/Вход/i)).toBeInTheDocument();
-    // Используем getByPlaceholderText вместо getByLabelText
     expect(screen.getByPlaceholderText(/Email/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Пароль/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Войти/i })).toBeInTheDocument();
@@ -44,7 +49,6 @@ describe('Login Component', () => {
       </BrowserRouter>
     );
     
-    // Используем getByPlaceholderText вместо getByLabelText
     const emailInput = screen.getByPlaceholderText(/Email/i);
     const passwordInput = screen.getByPlaceholderText(/Пароль/i);
     
@@ -64,7 +68,6 @@ describe('Login Component', () => {
       </BrowserRouter>
     );
     
-    // Используем getByPlaceholderText вместо getByLabelText
     const emailInput = screen.getByPlaceholderText(/Email/i);
     const passwordInput = screen.getByPlaceholderText(/Пароль/i);
     const submitButton = screen.getByRole('button', { name: /Войти/i });
@@ -75,7 +78,6 @@ describe('Login Component', () => {
     
     await waitFor(() => {
       expect(authService.login).toHaveBeenCalledWith('test@example.com', 'password123');
-      // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
       expect(mockedNavigate).toHaveBeenCalledWith('/dashboard');
     });
   });
@@ -89,7 +91,6 @@ describe('Login Component', () => {
       </BrowserRouter>
     );
     
-    // Используем getByPlaceholderText вместо getByLabelText
     const emailInput = screen.getByPlaceholderText(/Email/i);
     const passwordInput = screen.getByPlaceholderText(/Пароль/i);
     const submitButton = screen.getByRole('button', { name: /Войти/i });
@@ -99,7 +100,6 @@ describe('Login Component', () => {
     fireEvent.click(submitButton);
     
     await waitFor(() => {
-      // Изменяем ожидаемый текст ошибки на тот, который фактически отображается
       expect(screen.getByText(/Ошибка входа/i)).toBeInTheDocument();
     });
   });
