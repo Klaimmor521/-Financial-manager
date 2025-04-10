@@ -16,7 +16,7 @@ export function Login() {
       await authService.login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.error || 'Ошибка входа');
+      setError(err.message);
     }
   };
 

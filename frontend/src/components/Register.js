@@ -17,7 +17,7 @@ export function Register() {
       await authService.register(username, email, password);
       navigate('/login');
     } catch (err) {
-      setError(err.error || 'Ошибка регистрации');
+      setError(err.message);
     }
   };
 

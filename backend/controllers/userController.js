@@ -6,7 +6,6 @@ class UserController {
     try {
       const { username, email, password } = req.body;
 
-      // Базовая валидация
       if (!username || !email || !password) {
         return res.status(400).json({ error: 'Все поля обязательны' });
       }
@@ -14,10 +13,7 @@ class UserController {
       const user = await UserModel.createUser(username, email, password);
       const token = generateToken(user);
 
-      res.status(201).json({ 
-        user, 
-        token 
-      });
+      res.status(201).json({ user, token });
     } catch (error) {
       if (error.message === 'Email already exists') {
         return res.status(409).json({ error: 'Пользователь с таким email уже существует' });
@@ -30,21 +26,25 @@ class UserController {
     try {
       const { email, password } = req.body;
 
-      const user = await UserModel.validateUser(email, password);
-
-      if (!user) {
-        return res.status(401).json({ error: 'Неверный email или пароль' });
+      const foundUser = await UserModel.findUserByEmail(email);
+      if (!foundUser) {
+        return res.status(401).json({ error: 'Пользователь с таким email не найден' });
       }
 
-      const token = generateToken(user);
+      const isValid = await UserModel.validateUser(email, password);
+      if (!isValid) {
+        return res.status(401).json({ error: 'Неверный пароль' });
+      }
 
-      res.json({ 
-        user: { 
-          id: user.id, 
-          username: user.username, 
-          email: user.email 
-        }, 
-        token 
+      const token = generateToken(foundUser);
+
+      res.json({
+        user: {
+          id: foundUser.id,
+          username: foundUser.username,
+          email: foundUser.email
+        },
+        token
       });
     } catch (error) {
       res.status(500).json({ error: 'Ошибка при входе' });
