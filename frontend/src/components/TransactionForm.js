@@ -76,7 +76,7 @@ const TransactionForm = ({ fetchTransactions, editTransaction, setEditTransactio
   };
 
   return (
-    <div className="transaction-form">
+    <div className="transaction-form" id="transaction-form">
       <h2>{editTransaction ? 'Редактировать' : 'Добавить'} транзакцию</h2>
       <form onSubmit={handleTransactionSubmit}>
         <input type="number" name="amount" placeholder="Сумма" value={formData.amount} onChange={handleInputChange} required />

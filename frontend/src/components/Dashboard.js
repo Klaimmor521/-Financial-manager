@@ -30,7 +30,7 @@ export default function Dashboard() {
         <div className="row">
           <div className="col-md-4">
             <TransactionForm 
-              onTransactionAdded={handleTransactionAdded}
+              onSuccess={handleTransactionAdded}
               editTransaction={editTransaction}
               setEditTransaction={setEditTransaction}
             />
