@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import NotificationCenter from './NotificationCenter';
 
 const NavBar = () => {
   const navigate = useNavigate();
@@ -15,14 +16,17 @@ const NavBar = () => {
   }
 
   return (
-    <nav>
-      <ul>
+    <nav className="navbar">
+      <ul className="navbar-menu">
         <li><Link to="/transactions">Transactions</Link></li>
         <li><Link to="/goals">Goals</Link></li>
         <li>
           <button onClick={handleLogout} className="btn btn-outline-danger btn-sm">
             Logout
           </button>
+        </li>
+        <li>
+          <NotificationCenter />
         </li>
       </ul>
     </nav>

@@ -1,9 +1,11 @@
 const Transaction = require('../models/transactionModel');
 const Category = require('../models/categoryModel');
+const NotificationService = require('../../frontend/src/services/notificationService');
 
 class TransactionController {
   static async createTransaction(req, res) {
-    try {
+    try 
+    {
       const { amount, type, categoryId, description, date } = req.body;
       const userId = req.user.id;
 
@@ -23,6 +25,14 @@ class TransactionController {
       const transaction = await Transaction.create({ userId, amount: parseFloat(amount), type, categoryId, description, date });
 
       res.status(201).json({ success: true, message: 'Transaction created successfully', data: transaction });
+      // Создание уведомления
+    await NotificationService.notifyNewTransaction(
+      req.user.id,
+      newTransaction.id,
+      newTransaction.amount
+    );
+    
+    return res.status(201).json(newTransaction);
     } catch (error) {
       res.status(500).json({ success: false, message: 'Error creating transaction', error: error.message });
     }

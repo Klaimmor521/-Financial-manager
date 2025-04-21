@@ -7,40 +7,44 @@ import TransactionEditPage from './components/TransactionEditPage';
 import GoalPage from './components/GoalPage';
 import NavBar from './components/NavBar';
 import { GoalProvider } from './context/GoalContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  if (!token) {
+  if (!token)
+  {
     return <Navigate to="/login" replace />;
   }
-  return children;
+  return children;  
 };
 
 function App() {
   return (
-    <div>
-      <NavBar />
-      <div className="container">
-        <GoalProvider>
+    <NotificationProvider>
+      <GoalProvider>
+        <NavBar />
+        <div className="container">
           <Routes>
             <Route path="/" element={<Main />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/transactions" element={
+            <Route path="/transactions" element=
+            {
               <ProtectedRoute>
                 <TransactionEditPage />
               </ProtectedRoute>
             } />
-            <Route path="/goals" element={
+            <Route path="/goals" element=
+            {
               <ProtectedRoute>
                 <GoalPage />
               </ProtectedRoute>
             } />
           </Routes>
-        </GoalProvider>
-      </div>
-    </div>
+        </div>
+      </GoalProvider>
+    </NotificationProvider>
   );
 }
 
