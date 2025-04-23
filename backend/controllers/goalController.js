@@ -197,7 +197,7 @@ class GoalController {
   }
   
   static async updateGoalAmount(req, res) {
-    try
+    try 
     {
       const userId = req.user.id;
       const goalId = req.params.id;
@@ -216,32 +216,25 @@ class GoalController {
 
       const updatedGoal = await Goal.updateAmount(goalId, parseFloat(amount), userId);
 
-      const oldProgress = existingGoal.target_amount > 0 // Use existingGoal.target_amount
-        ? (existingGoal.current_amount / existingGoal.target_amount) * 100
-        : 0;
-      const newProgress = updatedGoal.target_amount > 0 // Use updatedGoal.target_amount
-        ? (updatedGoal.current_amount / updatedGoal.target_amount) * 100
-        : 0;
+      const oldProgress = (existingGoal.current_amount / existingGoal.target_amount) * 100;
+      const newProgress = (updatedGoal.current_amount / updatedGoal.target_amount) * 100;
 
       console.log(`➡ Прогресс цели "${updatedGoal.name}": old=${oldProgress.toFixed(2)}%, new=${newProgress.toFixed(2)}%`);
 
-      // Check for the *highest* milestone achieved and create one notification
-      const milestones = [100, 75, 50, 25]; // Iterate descending
+      const milestones = [25, 50, 75, 100];
       console.log('📊 oldProgress =', oldProgress.toFixed(2), '%');
       console.log('📈 newProgress =', newProgress.toFixed(2), '%');
       for (const milestone of milestones) {
-        // Ensure target_amount is used for calculation consistency
         if (newProgress >= milestone && oldProgress < milestone) {
           try {
-            console.log(`🔔 Достигнут наивысший рубеж ${milestone}% — создаём уведомление`);
-            await NotificationModel.create({ // Use await here
+            console.log(`🔔 Достигнут рубеж ${milestone}% — создаём уведомление`);
+            const notification = await NotificationModel.create({
               userId,
               type: 'goal_progress',
               message: `Вы достигли ${milestone}% цели "${updatedGoal.name}"! Отличная работа!`,
-              relatedEntityId: updatedGoal.id // Use updatedGoal.id for consistency
+              relatedEntityId: goalId
             });
-            console.log(`✅ Уведомление на ${milestone}% создано`);
-            break; // <<<--- Add break to send only one notification for the highest milestone
+            console.log(`✅ Уведомление на ${milestone}% создано:`, notification);
           } catch (notificationError) {
             console.error(`❌ Ошибка при создании уведомления на ${milestone}%:`, notificationError);
           }

@@ -8,6 +8,7 @@ import GoalPage from './components/GoalPage';
 import NavBar from './components/NavBar';
 import { GoalProvider } from './context/GoalContext';
 import { NotificationProvider } from './context/NotificationContext';
+import Dashboard from './components/Dashboard';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -20,23 +21,30 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
+  const token = localStorage.getItem('token');
+
   return (
     <NotificationProvider>
       <GoalProvider>
         <NavBar />
         <div className="container">
           <Routes>
-            <Route path="/" element={<Main />} />
+            <Route path="/" element={
+              token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />
+            } />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/transactions" element=
-            {
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/transactions" element={
               <ProtectedRoute>
                 <TransactionEditPage />
               </ProtectedRoute>
             } />
-            <Route path="/goals" element=
-            {
+            <Route path="/goals" element={
               <ProtectedRoute>
                 <GoalPage />
               </ProtectedRoute>

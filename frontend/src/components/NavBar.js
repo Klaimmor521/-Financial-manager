@@ -18,6 +18,7 @@ const NavBar = () => {
   return (
     <nav className="navbar">
       <ul className="navbar-menu">
+        <li><Link to="/dashboard">Dashboard</Link></li>
         <li><Link to="/transactions">Transactions</Link></li>
         <li><Link to="/goals">Goals</Link></li>
         <li>

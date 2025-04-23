@@ -1,47 +1,50 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { authService } from '../services/authService';
-import TransactionForm from './TransactionForm';
-import TransactionList from './TransactionList';
+import React, { useEffect, useState } from 'react';
+import analyticsService from '../services/analyticsService';
+import MonthlyTrendsChart from './MonthlyTrendsChart';
+// Import or create these components as needed:
+import CategoryAnalyticsChart from './CategoryAnalyticsChart';
+import IncomeExpenseRatio from './IncomeExpenseRatio';
+import SavingsRate from './SavingsRate';
+import RecommendationsList from './RecommendationsList';
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const user = authService.getCurrentUser();
-  const [editTransaction, setEditTransaction] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const user = JSON.parse(localStorage.getItem('user'));
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleLogout = () => {
-    authService.logout();
-    navigate('/login');
-  };
+  useEffect(() => {
+    analyticsService.getDashboardAnalytics()
+      .then(res => {
+        setDashboardData(res.data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
-  const handleTransactionAdded = () => {
-    setRefreshKey(prev => prev + 1); // This will trigger TransactionList to refresh
-  };
+  if (loading) return <div>Loading analytics...</div>;
+  if (!dashboardData) return <div>Failed to load analytics.</div>;
 
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1>Добро пожаловать, {user.username}!</h1>
-        <button onClick={handleLogout} className="btn btn-outline-danger">Выйти</button>
+        <h1>Добро пожаловать, {user?.username}!</h1>
       </div>
-      
       <div className="dashboard-content">
-        <div className="row">
-          <div className="col-md-4">
-            <TransactionForm 
-              onSuccess={handleTransactionAdded}
-              editTransaction={editTransaction}
-              setEditTransaction={setEditTransaction}
-            />
-          </div>
-          <div className="col-md-8">
-            <TransactionList 
-              key={refreshKey}
-              onEditTransaction={setEditTransaction}
-              onTransactionDeleted={handleTransactionAdded}
-            />
-          </div>
+        <h2>Аналитика</h2>
+        <div style={{ marginBottom: '2rem' }}>
+          <MonthlyTrendsChart data={dashboardData.monthlyTrends} />
+        </div>
+        <div style={{ marginBottom: '2rem' }}>
+          <CategoryAnalyticsChart data={dashboardData.categoryAnalytics} />
+        </div>
+        <div style={{ marginBottom: '2rem' }}>
+          <IncomeExpenseRatio data={dashboardData.incomeExpenseRatio} />
+        </div>
+        <div style={{ marginBottom: '2rem' }}>
+          <SavingsRate data={dashboardData.savingsRate} />
+        </div>
+        <div style={{ marginBottom: '2rem' }}>
+          <RecommendationsList data={dashboardData.recommendations} />
         </div>
       </div>
     </div>
