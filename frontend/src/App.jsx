@@ -9,6 +9,7 @@ import NavBar from './components/NavBar';
 import { GoalProvider } from './context/GoalContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Dashboard from './components/Dashboard';
+import ProfilePage from './components/ProfilePage';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -49,6 +50,14 @@ function App() {
                 <GoalPage />
               </ProtectedRoute>
             } />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
           </Routes>
         </div>
       </GoalProvider>

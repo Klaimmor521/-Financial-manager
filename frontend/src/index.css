@@ -611,3 +611,74 @@ nav a:hover {
 .mark-all-read:hover {
   text-decoration: underline;
 }
+
+.profile-container {
+  /* Styles for the overall profile container */
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.profile-details {
+  /* Styles for the profile details section */
+  margin-bottom: 20px;
+}
+
+.profile-details p {
+  margin-bottom: 10px;
+}
+
+
+.edit-profile-form label {
+  display: block; /* Make labels appear on their own line */
+  margin-bottom: 5px;
+}
+
+.edit-profile-form input[type="text"],
+.edit-profile-form input[type="email"] {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.edit-profile-form button {
+  margin-right: 5px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.edit-profile-form button:first-child {
+    background-color: #4CAF50; /* Green */
+    color: white;
+}
+
+.edit-profile-form button:last-child {
+    background-color: #f44336; /* Red */
+    color: white;
+}
+
+
+.btn-danger {
+  background-color: #dc3545; /* Red */
+  color: white;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+}

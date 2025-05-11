@@ -6,9 +6,9 @@ const router = express.Router();
 router.post('/register', UserController.register);
 router.post('/login', UserController.login);
 
-// Защищенный маршрут
-router.get('/profile', authMiddleware, (req, res) => {
-  res.json({ message: 'Доступ к профилю разрешен' });
-});
+// // Защищенный маршрут
+// router.get('/profile', authMiddleware, (req, res) => {
+//   res.json({ message: 'Доступ к профилю разрешен' });
+// });
 
 module.exports = router;

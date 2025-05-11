@@ -13,6 +13,9 @@ const authMiddleware = (req, res, next) => {
     return res.status(401).json({ error: 'Недействительный токен' });
   }
 
+  // console.log('Token:', token); // Log the received token
+  // console.log('Decoded token:', decoded);  // Log the decoded token (if successful)
+
   req.user = decoded;
   next();
 };
