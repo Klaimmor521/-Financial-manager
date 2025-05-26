@@ -112,6 +112,7 @@ class GoalController {
       delete payload.created_at;
       delete payload.updated_at;
 
+      console.log('Payload for Goal.update:', payload);
 
       // Update the goal in the database using the static method
       const updatedGoal = await Goal.update(goalId, payload, userId);
@@ -160,7 +161,6 @@ class GoalController {
       return res.status(500).json({ message: 'Server error during goal update' });
     }
   }
-  
   
   static async deleteGoal(req, res) {
     try {

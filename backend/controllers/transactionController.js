@@ -4,37 +4,59 @@ const NotificationService = require('../../frontend/src/services/notificationSer
 
 class TransactionController {
   static async createTransaction(req, res) {
-    try 
-    {
+    try {
       const { amount, type, categoryId, description, date } = req.body;
       const userId = req.user.id;
-
+  
       if (!amount || !type || !categoryId) {
         return res.status(400).json({ message: 'Amount, type and category are required' });
       }
-
+  
       if (type !== 'income' && type !== 'expense') {
         return res.status(400).json({ message: 'Type must be either income or expense' });
       }
-
+  
       const category = await Category.findById(categoryId);
       if (!category) {
         return res.status(404).json({ message: 'Category not found' });
       }
 
-      const transaction = await Transaction.create({ userId, amount: parseFloat(amount), type, categoryId, description, date });
+      const transactionDate = new Date(date); // date из req.body
+      const today = new Date();
+      today.setHours(23, 59, 59, 999); // Сравниваем с концом сегодняшнего дня
 
-      res.status(201).json({ success: true, message: 'Transaction created successfully', data: transaction });
-      // Создание уведомления
-    await NotificationService.notifyNewTransaction(
-      req.user.id,
-      newTransaction.id,
-      newTransaction.amount
-    );
-    
-    return res.status(201).json(newTransaction);
+      if (transactionDate > today) {
+        return res.status(400).json({ message: 'Transaction date cannot be in the future.' });
+      }
+  
+      // Создаем транзакцию
+      const newTransaction = await Transaction.create({ userId, amount: parseFloat(amount), type, categoryId, description, date });
+  
+      // Создание уведомления (предполагаем, что NotificationService - это бэкенд сервис)
+      // И УБЕДИСЬ, ЧТО ЭТОТ ВЫЗОВ НЕ АСИНХРОННЫЙ БЕЗ AWAIT, ЕСЛИ ОН ВОЗВРАЩАЕТ PROMISE И ВАЖЕН ДЛЯ ОТВЕТА
+      try {
+          // Замени NotificationService на твой реальный сервис уведомлений на бэкенде
+          // Например, NotificationModel.create(...)
+          // await NotificationModel.create({
+          //   userId: userId,
+          //   type: 'transaction_created',
+          //   message: `New transaction of ${newTransaction.amount} was added.`,
+          //   relatedEntityId: newTransaction.id
+          // });
+          console.log('Уведомление о транзакции (пока не реализовано полностью или проверь импорт)');
+      } catch (notificationError) {
+          console.error('Ошибка при создании уведомления о транзакции:', notificationError);
+          // Не прерываем основной ответ из-за ошибки уведомления, но логируем
+      }
+      
+      // Отправляем ОДИН ответ клиенту
+      return res.status(201).json({ success: true, message: 'Transaction created successfully', data: newTransaction });
+  
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Error creating transaction', error: error.message });
+      // Логируем ошибку на сервере
+      console.error('Error creating transaction:', error);
+      // Отправляем общий ответ об ошибке клиенту
+      return res.status(500).json({ success: false, message: 'Error creating transaction', error: error.message });
     }
   }
 

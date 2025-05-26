@@ -75,7 +75,7 @@ class Goal {
   static async calculateProgress(id, userId) {
     const query = `
       SELECT 
-        id, name, target_amount, current_amount,
+        id, name, target_amount, current_amount, description,
         ROUND((current_amount / target_amount * 100)::numeric, 2) as percentage,
         start_date, target_date,
         (target_date::date - CURRENT_DATE) as days_remaining,
@@ -91,7 +91,7 @@ class Goal {
   static async calculateAllProgress(userId) {
     const query = `
       SELECT 
-        id, name, target_amount, current_amount,
+        id, name, target_amount, current_amount, description,
         ROUND((current_amount / target_amount * 100)::numeric, 2) as percentage,
         start_date, target_date,
         (target_date::date - CURRENT_DATE) as days_remaining,

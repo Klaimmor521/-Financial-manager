@@ -59,7 +59,7 @@ button {
   border-radius: 4px;
   cursor: pointer;
   width: 200px;
-  margin: 0 auto
+  margin: 0 auto;
 }
 
 .edit, .delete
@@ -75,7 +75,7 @@ button {
 }
 
 .error {
-  color: red;
+  color: rgb(156, 0, 0);
   margin-bottom: 10px;
 }
 
@@ -438,7 +438,7 @@ nav a:hover {
   border-radius: 8px;
   width: 100%;
   max-width: 500px;
-  max-height: 90vh;
+  height: 330px;
   overflow-y: auto;
 }
 
@@ -752,4 +752,86 @@ nav a:hover {
     margin-bottom: 1rem;
     border: 1px solid transparent;
     border-radius: 0.25rem;
+}
+
+.error-message {
+  color: rgb(156, 0, 0);
+  font-size: 0.875em;
+  margin-top: 4px;
+}
+
+input.input-error,
+textarea.input-error,
+select.input-error {
+  border-color: red !important; /* !important на случай конфликтов */
+}
+
+input.input-error,
+textarea.input-error,
+select.input-error {
+  border-color: red !important; /* Красная рамка для полей с ошибкой */
+}
+
+.goal-form-container label {
+  margin-bottom: 0.25rem; /* Tailwind mb-1 */
+  /* color: #374151; Tailwind text-gray-700 */
+  /* font-weight: 500; Tailwind font-medium */
+  /* font-size: 0.875rem; Tailwind text-sm */
+}
+
+.goal-form-container input[type="text"],
+.goal-form-container input[type="number"],
+.goal-form-container input[type="date"],
+.goal-form-container textarea,
+.goal-form-container select {
+  /* Tailwind классы уже применяются: block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm */
+  /* Можно добавить общие стили для инпутов здесь, если нужно */
+  padding: 0.5rem 0.75rem; /* Примерные паддинги для инпутов */
+}
+
+/* Новые стили для горизонтального расположения лейбла и инпута Description */
+.goal-form-group-horizontal {
+  display: flex;
+  align-items: flex-start; /* Выравнивание по верху, если textarea многострочный */
+  gap: 0.75rem; /* Пространство между лейблом и инпутом (Tailwind gap-3) */
+}
+
+.goal-form-label-horizontal {
+  flex-shrink: 0;
+  width: 70px; /* Например, подбери значение */
+  padding-top: 0.5rem; 
+  /* ... остальные стили лейбла ... */
+}
+
+.goal-form-label-horizontal .text-xs { /* Для "(max 50 chars)" */
+    display: block; /* Чтобы перенеслось на новую строку под "Description" */
+    margin-top: 0.125rem; /* Небольшой отступ */
+}
+
+.goal-form-input-wrapper {
+  flex-grow: 1; /* Поле ввода займет оставшееся пространство */
+}
+
+/* Стили для кнопок формы */
+.goal-form-actions {
+  margin-top: 1rem; /* Tailwind pt-4, но здесь можно явно задать */
+  /* Tailwind классы flex justify-end space-x-3 уже применяются */
+}
+
+/* Уменьшим высоту модального окна, чтобы кнопки были видны */
+.modal-content {
+  background: white;
+  padding: 1.5rem; /* Можно вернуть 2rem, если больше нравится */
+  border-radius: 8px;
+  width: 100%;
+  max-width: 480px; /* Немного уменьшил для компактности, подбери значение */
+  height: auto;      /* <-- ИЗМЕНЕНИЕ: высота по контенту */
+  max-height: 90vh;  /* Ограничение по высоте viewport'а */
+  overflow-y: auto;  /* Скролл появится, только если контент превысит max-height */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* Добавил тень посильнее для модалки */
+}
+/* В index.css или твоем CSS файле для GoalForm */
+.goal-form-input-wrapper textarea {
+  overflow-y: hidden; /* Убирает вертикальный скролл, если текст не помещается в заданное количество rows */
+  resize: none;       /* Запрещает пользователю изменять размер textarea вручную */
 }
