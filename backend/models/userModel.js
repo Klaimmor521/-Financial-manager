@@ -88,7 +88,7 @@ class UserModel
         if (error.code === '23505' && error.constraint === 'users_email_key') { // Убедись, что имя ограничения верное
             throw new Error('Email already in use');
         }
-        console.error('Error updating user:', error);
+        console.error('Error updating user in DB:', error);
         throw error;
     }
   }
@@ -97,7 +97,7 @@ class UserModel
     try {
       console.log('Fetching user data for id:', userId);
       // Явно указываем поля, чтобы не тащить пароль и иметь контроль над данными
-      const query = 'SELECT id, username, email, created_at, updated_at, avatar FROM users WHERE id = $1'; // Добавил avatar_url
+      const query = 'SELECT id, username, email, created_at, updated_at, avatar FROM users WHERE id = $1'; 
       const result = await db.query(query, [userId]);
       return result.rows[0];
     } catch (error) {

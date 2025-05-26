@@ -328,11 +328,12 @@ nav a:hover {
 .goals-page {
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Занимаем всю высоту viewport */
+  /* height: 100vh;  <-- УДАЛИТЬ или ЗАМЕНИТЬ */
+  min-height: 100vh; /* <-- ЗАМЕНА (опционально, если нужно чтобы страница всегда была на весь экран по высоте) */
   padding: 0;
   max-width: 1200px;
   margin: 0 auto;
-  overflow: hidden; /* Предотвращаем скролл на всей странице */
+  /* overflow: hidden; <-- УДАЛИТЬ */
 }
 
 .goals-header {
@@ -672,6 +673,76 @@ nav a:hover {
   cursor: pointer;
 }
 
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+}
+
+.profile-page-container {
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.profile-avatar-image {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%; /* Делает изображение круглым */
+  object-fit: cover; /* Гарантирует, что изображение покроет область без искажений */
+  border: 3px solid #eee;
+  margin-bottom: 15px;
+  background-color: #f0f0f0; /* Фон для случая, если изображение не загрузится */
+}
+
+.avatar-buttons {
+  display: flex;
+  gap: 10px; /* Пространство между кнопками */
+}
+
+.avatar-buttons .btn {
+  padding: 6px 12px; /* Меньший размер для кнопок аватара */
+}
+
+.edit-profile-form div,
+.profile-details p {
+  margin-bottom: 15px;
+}
+
+.edit-profile-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.edit-profile-form input[type="text"],
+.edit-profile-form input[type="email"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.edit-profile-form button,
+.profile-details button {
+  margin-right: 10px;
+}
 
 .alert-danger {
     color: #721c24;

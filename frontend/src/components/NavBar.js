@@ -1,53 +1,88 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import NotificationCenter from './NotificationCenter';
-import axios from 'axios'
+import NotificationCenter from './NotificationCenter'; // Убедись, что путь верный
+import axios from 'axios';
 
 const NavBar = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState(''); 
-  const [avatar, setAvatar] = useState(null);
+  const [username, setUsername] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState(null); // Переименуем для ясности в avatarUrl
   const token = localStorage.getItem('token');
+
+  const API_SERVER_URL = 'http://localhost:5000'; // URL твоего API и сервера статики
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if(token) {
-        try{
-          const response = await axios.get('/api/users/profile',{
+      if (token) {
+        try {
+          // Решение 1: Если настроен proxy в package.json фронтенда на "http://localhost:5000"
+          // const response = await axios.get('/api/users/profile', {
+
+          // Решение 2: Использовать полный URL (если proxy не настроен)
+          const response = await axios.get(`${API_SERVER_URL}/api/users/profile`, {
             headers: {
               Authorization: `Bearer ${token}`
             }
           });
-          setUsername(response.data.username)
-          setAvatar(response.data.avatar)
-        } catch(error) {
-          console.error('Failed to fetch user data:', error);
+
+          console.log('NavBar - User data from server:', response.data); // Для отладки
+
+          setUsername(response.data.username || 'User');
+          if (response.data.avatar) { // Бэкенд возвращает поле 'avatar' с относительным путем
+            setAvatarUrl(`${API_SERVER_URL}${response.data.avatar}`); // Формируем полный URL для src
+          } else {
+            setAvatarUrl(null); // Если аватара нет
+          }
+        } catch (error) {
+          console.error('NavBar - Failed to fetch user data:', error);
+          if (error.response && error.response.status === 401) {
+            // Токен невалиден или истек, можно разлогинить
+            // localStorage.removeItem('token');
+            // navigate('/login');
+          }
         }
+      } else {
+        // Если токена нет, сбрасываем данные
+        setUsername('');
+        setAvatarUrl(null);
       }
     };
 
     fetchUserData();
-  },[token])
+  }, [token, navigate]); // Добавил navigate в зависимости, хотя он тут не меняет запрос
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    navigate('/'); // Redirect to main page instead of login
+    setUsername(''); // Очищаем состояние при выходе
+    setAvatarUrl(null);
+    navigate('/');
   };
 
   if (!token) {
-    return null;
+    return null; // Не отображаем NavBar, если пользователь не залогинен
   }
 
   return (
     <nav className="navbar">
       <ul className="navbar-menu">
         <li><Link to="/dashboard">Dashboard</Link></li>
-        <div className="user-info">
-        <img src={avatar} alt="Avatar" style={{ width: '30px', height: '30px', borderRadius: '50%' }} onClick={() => navigate('/profile')}/> {/* Make avatar clickable */}
-        <span onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }}>{username}</span> {/* Make username clickable */}
-      </div>
         <li><Link to="/transactions">Transactions</Link></li>
         <li><Link to="/goals">Goals</Link></li>
+        <div className="user-info" onClick={() => navigate('/profile')} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="Avatar" style={{ width: '30px', height: '30px', borderRadius: '50%', marginRight: '8px', objectFit: 'cover' }} />
+          ) : (
+            // Можно добавить заглушку или инициалы, если аватара нет
+            <div style={{
+              width: '30px', height: '30px', borderRadius: '50%', marginRight: '8px',
+              backgroundColor: '#ccc', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '14px', fontWeight: 'bold', color: '#fff'
+            }}>
+              {username ? username.charAt(0).toUpperCase() : '?'}
+            </div>
+          )}
+          <span>{username}</span>
+        </div>
         <li>
           <button onClick={handleLogout} className="btn btn-outline-danger btn-sm">
             Logout

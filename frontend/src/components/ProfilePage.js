@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Добавлен useCallback
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -7,30 +7,35 @@ const ProfilePage = () => {
     const navigate = useNavigate();
     const [profileData, setProfileData] = useState(null);
     const [editProfile, setEditProfile] = useState(false);
-    // Инициализируем updatedProfile пустым объектом или значениями из profileData, когда они загрузятся
     const [updatedProfile, setUpdatedProfile] = useState({ username: '', email: '', avatar_url: '' });
     const [isLoading, setIsLoading] = useState(true); // Состояние загрузки
     const [error, setError] = useState(null);
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState(null);
+    const fileInputRef = useRef(null);
+
+    const API_BASE_URL = `http://localhost:5000`;
 
     // Используем useCallback для fetchProfileData, чтобы не создавать функцию заново при каждом рендере
     const fetchProfileData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            console.log('Sending request to http://localhost:5000/api/users/profile');
-            // URL теперь относительный благодаря proxy (или полный, если proxy не настроен)
-            const response = await axios.get('http://localhost:5000/api/users/profile', { // ИЛИ 'http://localhost:5000/api/users/profile'
+            const response = await axios.get(`${API_BASE_URL}/api/users/profile`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
             });
             console.log("Response from server:", response.data);
             setProfileData(response.data);
-            // Устанавливаем начальные значения для формы редактирования
             setUpdatedProfile({
                 username: response.data.username || '',
                 email: response.data.email || '',
-                avatar_url: response.data.avatar_url || '' // Поле для аватара
             });
-        } catch (err) { // Изменил error на err, чтобы не конфликтовать с состоянием error
+            if (response.data.avatar) {
+                setAvatarPreview(`${API_BASE_URL}${response.data.avatar}`);
+            } else {
+                setAvatarPreview(null); // Если аватара нет
+            }
+        } catch (err) {
             console.error("Error fetching profile:", err);
             setError("Failed to fetch profile. Please try again later.");
             toast.error("Failed to fetch profile data.");
@@ -58,25 +63,154 @@ const ProfilePage = () => {
         setUpdatedProfile({ ...updatedProfile, [e.target.name]: e.target.value });
     };
 
-    const handleSaveProfile = async () => {
+    const handleAvatarFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // setAvatarFile(file); // Это состояние может быть уже не так нужно, если мы сразу отправляем. Но для превью полезно.
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAvatarPreview(reader.result); // Показываем локальное превью нового файла немедленно
+            };
+            reader.readAsDataURL(file);
+
+            // СРАЗУ ВЫЗЫВАЕМ ЗАГРУЗКУ НА СЕРВЕР ПОСЛЕ ВЫБОРА ФАЙЛА
+            handleSaveAvatar(file);
+        }
+    };
+
+    const handleSaveAvatar = async (fileToUpload) => {
+        if (!fileToUpload) {
+            console.log("handleSaveAvatar called without a file.");
+            return;
+        }
+        setError(null);
+        const formData = new FormData();
+        formData.append('avatar', fileToUpload);
+
+        // Важно: чтобы бэкенд мог корректно обновить запись, ему могут понадобиться
+        // текущие username и email, даже если меняется только аватар.
+        // Это также помогает, если бэкенд ожидает эти поля для валидации или других операций.
+        if (profileData) {
+            formData.append('username', profileData.username);
+            formData.append('email', profileData.email);
+        } else {
+            // Если profileData еще не загружен, это может быть проблемой.
+            // Можно либо прервать, либо попытаться загрузить без этих данных (если бэкенд это поддерживает)
+            console.warn("Profile data not available when uploading avatar. Sending avatar only.");
+            // Если бэкенд может обновить аватар только по ID пользователя (из токена),
+            // и не требует username/email в этом конкретном случае, то это может сработать.
+            // Но лучше убедиться, что profileData загружен.
+            // Для надежности, можно дождаться загрузки profileData или показать ошибку.
+        }
+
+        console.log("Sending avatar to server...", formData.get('avatar'));
+
+        try {
+            const response = await axios.put(`${API_BASE_URL}/api/users/profile`, formData, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            console.log('Server response after avatar upload:', response.data);
+
+            const newAvatarUrlFromServer = response.data.avatar;
+            // Обновляем profileData, чтобы оно было актуальным
+            setProfileData(prevData => {
+                const updated = { ...prevData, avatar: newAvatarUrlFromServer };
+                console.log('Updating profileData to:', updated);
+                return updated;
+            });
+
+            // Обновляем превью аватара с URL от сервера
+            if (newAvatarUrlFromServer) {
+                const fullPreviewUrl = `${API_BASE_URL}${newAvatarUrlFromServer}`;
+                console.log('Setting avatarPreview (from server) to:', fullPreviewUrl);
+                setAvatarPreview(fullPreviewUrl);
+            } else {
+                console.log('Setting avatarPreview to null (no avatar from server)');
+                setAvatarPreview(null); // Если аватар был удален и сервер вернул null
+            }
+            // setAvatarFile(null); // Можно сбросить, так как файл уже отправлен
+            toast.success('Avatar updated successfully!');
+        } catch (err) {
+            console.error("Error updating avatar:", err.response ? err.response.data : err.message);
+            const errorMessage = err.response?.data?.error || "Failed to update avatar.";
+            setError(errorMessage);
+            toast.error(errorMessage);
+
+            // Важно: если загрузка не удалась, откатываем превью к предыдущему состоянию (если оно было)
+            // или к локальному превью, если пользователь еще не ушел со страницы.
+            // Лучше всего откатить к тому, что сейчас в profileData.avatar_url
+            if (profileData && profileData.avatar) {
+                setAvatarPreview(`${API_BASE_URL}${profileData.avatar}`);
+            } else if (avatarFile) { // Если был выбран файл, но загрузка не удалась, показываем его локальное превью
+                const reader = new FileReader();
+                reader.onloadend = () => { setAvatarPreview(reader.result); };
+                reader.readAsDataURL(avatarFile);
+            }
+            else {
+                setAvatarPreview(null); // Или к заглушке
+            }
+        }
+    };
+
+    const handleSaveProfileDetails = async () => { // Переименовано из handleSaveProfile
         setError(null);
         try {
-            // Убираем поля, которые не должны отправляться или если они пустые и не обязательны
-            const dataToSend = { ...updatedProfile };
-            if (!dataToSend.avatar_url) delete dataToSend.avatar_url; // Если пусто, не отправляем
+            // В этой функции мы НЕ отправляем файл аватара, только текстовые данные.
+            // Файл аватара обрабатывается отдельно через handleSaveAvatar или при его выборе.
+            const dataToSend = {
+                username: updatedProfile.username,
+                email: updatedProfile.email,
+            };
 
-            const response = await axios.put('http://localhost:5000/api/users/profile', dataToSend, { // ИЛИ 'http://localhost:5000/api/users/profile'
+            const response = await axios.put(`${API_BASE_URL}/api/users/profile`, dataToSend, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                 // 'Content-Type' здесь будет 'application/json' по умолчанию с Axios для объекта
             });
-            setProfileData(prevData => ({...prevData, ...response.data})); // Обновляем только полученные поля
-            setUpdatedProfile(prevValues => ({...prevValues, ...response.data})); // И форму тоже
+            setProfileData(prevData => ({ ...prevData, ...response.data }));
+            setUpdatedProfile(prevValues => ({ ...prevValues, ...response.data }));
             setEditProfile(false);
-            toast.success('Profile updated successfully!');
+            toast.success('Profile details updated successfully!');
         } catch (err) {
-            console.error("Error updating profile:", err);
+            console.error("Error updating profile details:", err);
             const errorMessage = err.response?.data?.error || "Failed to update profile. Please try again later.";
             setError(errorMessage);
             toast.error(errorMessage);
+        }
+    };
+
+    const handleDeleteAvatar = async () => {
+        if (!profileData || !profileData.avatar) {
+            toast.info("No avatar to delete.");
+            return;
+        }
+        if (window.confirm("Are you sure you want to delete your avatar?")) {
+            setError(null);
+            try {
+                // Для удаления аватара отправляем запрос на обновление профиля
+                // с пустым (или специальным значением) для avatar_url.
+                // Бэкенд должен обработать это и удалить файл с сервера.
+                const dataToSend = {
+                    username: profileData.username,
+                    email: profileData.email,
+                    avatar: null // Или специальный флаг, например 'DELETE_AVATAR'
+                };
+
+                const response = await axios.put(`${API_BASE_URL}/api/users/profile`, dataToSend, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                });
+
+                setProfileData(prevData => ({ ...prevData, avatar: null }));
+                setAvatarPreview(null);
+                toast.success('Avatar deleted successfully!');
+            } catch (err) {
+                console.error("Error deleting avatar:", err);
+                const errorMessage = err.response?.data?.error || "Failed to delete avatar.";
+                setError(errorMessage);
+                toast.error(errorMessage);
+            }
         }
     };
 
@@ -84,7 +218,7 @@ const ProfilePage = () => {
         if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
             setError(null);
             try {
-                await axios.delete('http://localhost:5000/api/users/profile', { // ИЛИ 'http://localhost:5000/api/users/profile'
+                await axios.delete(`${API_BASE_URL}/api/users/profile`, {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
                 });
                 localStorage.removeItem('token');
@@ -99,25 +233,50 @@ const ProfilePage = () => {
         }
     };
 
-    if (isLoading) {
-        return <div>Loading profile...</div>;
-    }
-
-    if (!profileData && !isLoading) { // Если загрузка завершена, но данных нет (например, из-за ошибки)
-        return <div>Error loading profile. {error || "Please try refreshing the page."}</div>;
-    }
-    
-    // Если profileData все еще null после загрузки (маловероятно, если fetchProfileData отработал)
+    if (isLoading) return <div>Loading profile...</div>;
+    if (!profileData && !isLoading) return <div>Error loading profile. {error || "Please try refreshing the page."}</div>;
     if (!profileData) return <div>No profile data available.</div>;
 
-
     return (
-        <div className="profile-container"> {/* Используй классы из CSS */}
+        <div className="profile-page-container"> {/* Общий контейнер для страницы */}
             <h2>Profile</h2>
             {error && <div className="alert alert-danger">{error}</div>}
 
+            {/* Секция Аватара - видна всегда */}
+            <div className="avatar-section">
+                <img
+                    src={avatarPreview || 'https://via.placeholder.com/150?text=No+Avatar'} // Заглушка, если нет аватара
+                    alt="User Avatar"
+                    className="profile-avatar-image"
+                />
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    style={{ display: 'none' }} // Скрываем стандартный input
+                    accept="image/*"
+                    onChange={handleAvatarFileChange} // Используем новую функцию
+                />
+                <div className="avatar-buttons">
+                    <button 
+                        className="btn btn-sm btn-outline-primary" 
+                        onClick={() => fileInputRef.current.click()} // Триггерим клик по скрытому input
+                    >
+                        {profileData.avatar ? 'Change Avatar' : 'Upload Avatar'}
+                    </button>
+                    {profileData.avatar && (
+                        <button 
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={handleDeleteAvatar}
+                        >
+                            Delete Avatar
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Секция Редактирования Профиля (текстовые поля) */}
             {editProfile ? (
-                <div className="edit-profile-form"> {/* Используй классы из CSS */}
+                <div className="edit-profile-form">
                     <div>
                         <label htmlFor="username">Username:</label>
                         <input
@@ -138,48 +297,33 @@ const ProfilePage = () => {
                             onChange={handleInputChange}
                         />
                     </div>
-                    <div>
-                        <label htmlFor="avatar_url">Avatar URL (optional):</label>
-                        <input
-                            type="text"
-                            id="avatar_url"
-                            name="avatar_url"
-                            placeholder="http://example.com/avatar.png"
-                            value={updatedProfile.avatar_url || ''} // Убедимся, что value не undefined
-                            onChange={handleInputChange}
-                        />
-                    </div>
-                    <button onClick={handleSaveProfile}>Save</button>
+                    <button onClick={handleSaveProfileDetails}>Save Details</button>
                     <button onClick={() => {
                         setEditProfile(false);
-                        // Сбрасываем изменения в форме к текущим данным профиля
                         setUpdatedProfile({
                             username: profileData.username,
                             email: profileData.email,
-                            avatar_url: profileData.avatar_url || ''
                         });
-                        setError(null); // Сбрасываем ошибку при отмене
+                        // Восстанавливаем превью аватара из profileData при отмене редактирования деталей
+                        if (profileData.avatar) {
+                            setAvatarPreview(`${API_BASE_URL}${profileData.avatar}`);
+                        } else {
+                            setAvatarPreview(null);
+                        }
+                        setError(null);
                     }}>Cancel</button>
                 </div>
             ) : (
-                <div className="profile-details"> {/* Используй классы из CSS */}
-                    {profileData.avatar_url && (
-                        <img 
-                            src={profileData.avatar_url} 
-                            alt={`${profileData.username}'s avatar`}
-                            style={{width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', marginBottom: '15px'}}
-                        />
-                    )}
+                <div className="profile-details">
                     <p><strong>Username:</strong> {profileData.username}</p>
                     <p><strong>Email:</strong> {profileData.email}</p>
-                    <p><strong>Joined:</strong> {new Date(profileData.created_at).toLocaleDateString()}</p> {/* Используй toLocaleDateString или toLocaleString */}
-                    
-                    <p><strong>Goal Count:</strong> {profileData.goalCount !== undefined ? profileData.goalCount : 'N/A'}</p>
-                    <p><strong>Total Income:</strong> {profileData.incomeSum !== undefined ? profileData.incomeSum.toFixed(2) : 'N/A'}</p>
-                    <p><strong>Total Expense:</strong> {profileData.expenseSum !== undefined ? profileData.expenseSum.toFixed(2) : 'N/A'}</p>
+                    <p><strong>Joined:</strong> {new Date(profileData.created_at).toLocaleDateString()}</p>
+                    <p><strong>Goal Count:</strong> {profileData.goalCount ?? 'N/A'}</p>
+                    <p><strong>Total Income:</strong> {profileData.incomeSum?.toFixed(2) ?? 'N/A'}</p>
+                    <p><strong>Total Expense:</strong> {profileData.expenseSum?.toFixed(2) ?? 'N/A'}</p>
 
-                    <button onClick={() => setEditProfile(true)}>Edit Profile</button>
-                    <button onClick={handleDeleteAccount} className="btn btn-danger" style={{marginLeft: '10px'}}>
+                    <button onClick={() => setEditProfile(true)}>Edit Profile Details</button>
+                    <button onClick={handleDeleteAccount} className="btn btn-danger" style={{ marginLeft: '10px' }}>
                         Delete Account
                     </button>
                 </div>
