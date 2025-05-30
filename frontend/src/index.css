@@ -14,15 +14,114 @@ html {
   height: 100%;
 }
 
-.login-container, 
-.register-container 
-{
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: 300px;
+.auth-page-wrapper {
+  display: flex;
+  justify-content: center; /* Горизонтальное центрирование */
+  align-items: center;    /* Вертикальное центрирование */
+  min-height: calc(100vh - 100px); /* Высота экрана минус примерная высота NavBar и отступов */
+  /* Учитывай высоту твоего NavBar. Если NavBar position: sticky, то он не влияет на поток.
+     Если NavBar занимает место, то calc(100vh - ВЫСОТА_NAVBAR - ОТСТУПЫ_СВЕРХУ_СНИЗУ) */
+  padding: 20px; /* Отступы на случай маленьких экранов */
+  box-sizing: border-box;
+}
+
+/* Общий контейнер для форм входа и регистрации */
+.auth-form-container { /* Был .login-container, .register-container */
+  background-color: #ffffff;
+  padding: 30px 40px; /* Увеличим внутренние отступы */
+  border-radius: 12px; /* Более скругленные углы */
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); /* Более выраженная тень */
+  width: 100%; /* Чтобы на маленьких экранах занимал доступную ширину */
+  max-width: 400px; /* Максимальная ширина формы */
   text-align: center;
+}
+
+.auth-form-container h2 {
+  margin-bottom: 25px; /* Больше отступ под заголовком */
+  font-size: 1.8em;   /* Немного увеличим заголовок */
+  color: #333;
+}
+
+/* Стили для групп полей (label + input) */
+.form-group {
+  margin-bottom: 20px;
+  text-align: left; /* Выравниваем label и input по левому краю внутри группы */
+}
+
+.form-group label {
+  display: block; /* Label на своей строке */
+  font-weight: 600; /* Немного жирнее */
+  margin-bottom: 8px; /* Отступ под label */
+  color: #555;
+  font-size: 0.95em;
+}
+
+/* Стили для полей ввода */
+.auth-form-container input[type="text"],
+.auth-form-container input[type="email"],
+.auth-form-container input[type="password"] {
+  width: 100%; /* Занимают всю доступную ширину в .form-group */
+  padding: 12px 15px; /* Удобные отступы внутри поля */
+  border: 1px solid #ddd;
+  border-radius: 6px; /* Скругление поля */
+  box-sizing: border-box; /* Чтобы padding не увеличивал общую ширину */
+  font-size: 1em;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.auth-form-container input[type="text"]:focus,
+.auth-form-container input[type="email"]:focus,
+.auth-form-container input[type="password"]:focus {
+  border-color: #007bff; /* Цвет рамки при фокусе */
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Тень при фокусе (как у Bootstrap) */
+  outline: none; /* Убираем стандартный outline */
+}
+
+/* Стили для кнопки */
+.auth-button { /* Был просто button */
+  width: 100%; /* Кнопка на всю ширину */
+  background-color: #007bff; /* Основной синий цвет */
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.1em;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+  margin-top: 10px; /* Отступ над кнопкой */
+}
+
+.auth-button:hover {
+  background-color: #0056b3; /* Темнее при наведении */
+}
+
+/* Сообщение об ошибке */
+.error-message { /* Был .error */
+  color: #dc3545; /* Красный цвет для ошибок */
+  background-color: #f8d7da; /* Светло-розовый фон */
+  border: 1px solid #f5c6cb; /* Розовая рамка */
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 0.9em;
+}
+
+/* Ссылка для переключения между формами */
+.auth-switch-link {
+  margin-top: 25px;
+  font-size: 0.9em;
+  color: #555;
+}
+
+.auth-switch-link a {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-switch-link a:hover {
+  text-decoration: underline;
 }
 
 .dashboard
@@ -834,4 +933,63 @@ select.input-error {
 .goal-form-input-wrapper textarea {
   overflow-y: hidden; /* Убирает вертикальный скролл, если текст не помещается в заданное количество rows */
   resize: none;       /* Запрещает пользователю изменять размер textarea вручную */
+}
+
+.auth-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 150px); /* Высота экрана минус примерная высота NavBar и отступов */
+  text-align: center;
+  padding: 20px;
+}
+
+.auth-container h1 {
+  font-size: 2.5em;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.auth-container p {
+  font-size: 1.2em;
+  color: #555;
+  margin-bottom: 30px;
+  max-width: 500px; /* Чтобы текст не был слишком широким */
+}
+
+.auth-container .button-group {
+  display: flex;
+  gap: 20px; /* Расстояние между кнопками */
+}
+
+.auth-container .button-group button {
+  padding: 12px 25px;
+  font-size: 1.1em;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.auth-container .button-group button:hover {
+  transform: translateY(-2px); /* Небольшой эффект при наведении */
+}
+
+/* Стили для кнопки "Войти" (можно оставить дефолтные, если они подходят) */
+.auth-container .button-group button:first-child { /* Для кнопки "Войти" */
+  background-color: #007bff; /* Синий */
+  color: white;
+}
+.auth-container .button-group button:first-child:hover {
+  background-color: #0056b3;
+}
+
+/* Стили для кнопки "Зарегистрироваться" */
+.auth-container .button-group button:last-child { /* Для кнопки "Зарегистрироваться" */
+  background-color: #28a745; /* Зеленый */
+  color: white;
+}
+.auth-container .button-group button:last-child:hover {
+  background-color: #1e7e34;
 }

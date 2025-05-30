@@ -149,6 +149,26 @@ class Transaction {
   static async getTransactionsByFilters(userId, filters = {}) {
     return this.findAll(userId, filters);
   }
+
+  static async getTransactionsForReport(userId, startDate, endDate) {
+    const query = `
+      SELECT t.*, c.name as category_name
+      FROM transactions t
+      LEFT JOIN categories c ON t.category_id = c.id
+      WHERE t.user_id = $1
+        AND t.date >= $2  -- Фильтруем по полю date
+        AND t.date <= $3  -- Фильтруем по полю date
+      ORDER BY t.date ASC, t.created_at ASC; -- Сортируем по дате транзакции
+    `;
+    const queryParams = [userId, startDate, endDate];
+    try {
+      const result = await pool.query(query, queryParams);
+      return result.rows;
+    } catch (error) {
+      console.error("Error fetching transactions for report:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = Transaction;

@@ -16,31 +16,44 @@ export function Login() {
       await authService.login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Ошибка входа. Проверьте данные.'); // Более общее сообщение
     }
   };
 
   return (
-    <div className="login-container">
-      <h2>Вход</h2>
-      {error && <div className="error">{error}</div>}
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Пароль"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit">Войти</button>
-      </form>
+    <div className="auth-page-wrapper"> {/* <--- НОВАЯ ОБЕРТКА */}
+      <div className="login-container auth-form-container"> {/* Добавим общий класс auth-form-container */}
+        <h2>Вход</h2>
+        {error && <div className="error-message">{error}</div>} {/* Используем класс для ошибок */}
+        <form onSubmit={handleLogin}>
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              id="email" // Связь с label
+              placeholder="Введите ваш email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="password">Пароль</label>
+            <input
+              type="password"
+              id="password" // Связь с label
+              placeholder="Введите ваш пароль"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button type="submit" className="auth-button">Войти</button>
+          <p className="auth-switch-link">
+            Нет аккаунта? <a href="/register" onClick={(e) => { e.preventDefault(); navigate('/register'); }}>Зарегистрироваться</a>
+          </p>
+        </form>
+      </div>
     </div>
   );
 }

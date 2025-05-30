@@ -94,15 +94,14 @@ class AnalyticsController
   static async getDashboardAnalytics(req, res) {
     try {
       const userId = req.user.id;
-      
-      // Определяем диапазон дат: последние 3 месяца
       const endDate = new Date();
       const startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - 3);
-      
+      startDate.setMonth(startDate.getMonth() - 3); // Данные за последние 3 месяца для некоторых метрик
       const dateRange = { startDate, endDate };
-      
-      // Получаем все данные параллельно для ускорения
+  
+      console.log(`[AnalyticsController] Fetching dashboard analytics for user: ${userId}`);
+  
+      // --- ВОЗВРАЩАЕМ Promise.all ---
       const [
         categoryAnalytics,
         monthlyTrends,
@@ -110,23 +109,26 @@ class AnalyticsController
         savingsRate,
         recommendations
       ] = await Promise.all([
-        AnalyticsModel.getCategoryAnalytics(userId, dateRange),
-        AnalyticsModel.getMonthlyTrends(userId, 6),
-        AnalyticsModel.getIncomeExpenseRatio(userId, dateRange),
-        AnalyticsModel.getSavingsRate(userId, dateRange),
-        AnalyticsModel.generateRecommendations(userId)
+        AnalyticsModel.getCategoryAnalytics(userId, dateRange),      // Аналитика по категориям за 3 мес
+        AnalyticsModel.getMonthlyTrends(userId, 6),                 // Тренды за 6 месяцев
+        AnalyticsModel.getIncomeExpenseRatio(userId, dateRange),    // Соотношение Д/Р за 3 мес
+        AnalyticsModel.getSavingsRate(userId, dateRange),           // Норма сбережений за 3 мес
+        AnalyticsModel.generateRecommendations(userId)              // Рекомендации (внутри логика по периодам)
       ]);
       
-      return res.status(200).json({
+      console.log("[AnalyticsController] All dashboard data fetched successfully.");
+
+      return res.status(200).json({ // Возвращаем все данные
         categoryAnalytics,
         monthlyTrends,
         incomeExpenseRatio,
         savingsRate,
-        recommendations
+        recommendations // Убедись, что ключ 'recommendations' (не 'reccomendations')
       });
+      
     } catch (error) {
-      console.error('Error getting dashboard analytics:', error);
-      return res.status(500).json({ message: 'Internal server error' });
+      console.error('[AnalyticsController] Error getting dashboard analytics:', error);
+      return res.status(500).json({ message: 'Internal server error in AnalyticsController' });
     }
   }
 }

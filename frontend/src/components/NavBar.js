@@ -68,6 +68,7 @@ const NavBar = () => {
         <li><Link to="/dashboard">Dashboard</Link></li>
         <li><Link to="/transactions">Transactions</Link></li>
         <li><Link to="/goals">Goals</Link></li>
+        <li><Link to="/reports">Reports</Link></li> {/* <--- ДОБАВЬ ЭТО */}
         <div className="user-info" onClick={() => navigate('/profile')} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
           {avatarUrl ? (
             <img src={avatarUrl} alt="Avatar" style={{ width: '30px', height: '30px', borderRadius: '50%', marginRight: '8px', objectFit: 'cover' }} />

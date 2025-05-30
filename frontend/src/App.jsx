@@ -2,7 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
-import Main from './components/MainPage';
+import MainPage from './components/MainPage';
 import TransactionEditPage from './components/TransactionEditPage';
 import GoalPage from './components/GoalPage';
 import NavBar from './components/NavBar';
@@ -10,6 +10,7 @@ import { GoalProvider } from './context/GoalContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Dashboard from './components/Dashboard';
 import ProfilePage from './components/ProfilePage';
+import ReportsPage from './components/ReportsPage';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -31,7 +32,7 @@ function App() {
         <div className="container">
           <Routes>
             <Route path="/" element={
-              token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />
+              token ? <Navigate to="/dashboard" replace /> : <MainPage /> 
             } />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -56,6 +57,14 @@ function App() {
               <ProtectedRoute>
                 <ProfilePage />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports" // <--- ДОБАВЬ ЭТОТ РОУТ
+            element={
+            <ProtectedRoute>
+                <ReportsPage />
+            </ProtectedRoute>
             }
           />
           </Routes>
