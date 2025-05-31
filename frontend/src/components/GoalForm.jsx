@@ -47,34 +47,33 @@ const GoalForm = ({ goal, onClose }) => {
         formTargetDate = new Date(formData.targetDate + "T00:00:00"); // Добавляем время для корректного сравнения
     }
 
-
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = 'Для цели нужно имя!';
     } else if (formData.name.trim().length > 25) { // Ты используешь 25, а не 50, как обсуждали ранее
-      newErrors.name = 'Name cannot exceed 25 characters.';
+      newErrors.name = 'Имя не может превышать 25 символов.';
     }
     
     if (!formData.targetAmount || isNaN(target) || target <= 0) {
-      newErrors.targetAmount = 'Valid target amount is required';
+      newErrors.targetAmount = 'Требуется действительная целевая сумма';
     }
     
     if (formData.currentAmount && (isNaN(current) || current < 0)) {
-      newErrors.currentAmount = 'Current amount must be a non-negative number';
+      newErrors.currentAmount = 'Текущая сумма должна быть неотрицательным числом.';
     }
 
     if (!isNaN(current) && !isNaN(target) && current > target) {
-      newErrors.currentAmount = 'Current amount cannot exceed target amount.';
+      newErrors.currentAmount = 'Текущая сумма не может превышать целевую сумму.';
     }
     
     if (!formData.targetDate) {
-      newErrors.targetDate = 'Target date is required';
+      newErrors.targetDate = 'Укажите целевую дату.';
     } else if (formTargetDate && formTargetDate < today) { // Используем formTargetDate для сравнения
-      newErrors.targetDate = 'Target date cannot be in the past.';
+      newErrors.targetDate = 'Целевая дата не может быть в прошлом.';
     }
 
     // Валидация для description
     if (formData.description.trim().length > 50) { // Ограничение в 50 символов
-      newErrors.description = 'Description cannot exceed 50 characters.';
+      newErrors.description = 'Описание не может превышать 50 символов.';
     }
     
     // setErrors(newErrors); // Установка ошибок будет в handleSubmit
@@ -138,7 +137,7 @@ const GoalForm = ({ goal, onClose }) => {
     } catch (error) {
       console.error('Error submitting goal:', error.response || error);
       // --- ИЗМЕНЕНИЕ/ДОБАВЛЕНИЕ ---> Установка серверной ошибки
-      const serverError = error.response?.data?.message || error.response?.data?.error || 'Failed to save goal.';
+      const serverError = error.response?.data?.message || error.response?.data?.error || 'Не удалось сохранить цель.';
       setErrors({ form: serverError }); // Общая ошибка формы
       // toast.error(serverError);
       // --- ИЗМЕНЕНИЕ/ДОБАВЛЕНИЕ ---> Конец
@@ -155,7 +154,7 @@ const GoalForm = ({ goal, onClose }) => {
       {/* Goal Name */}
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1"> {/* mb-1 для небольшого отступа снизу у лейбла */}
-          Goal Name *
+        Название цели *
         </label>
         <input
           type="text"
@@ -167,7 +166,7 @@ const GoalForm = ({ goal, onClose }) => {
           className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
             errors.name ? 'input-error' : ''
           }`}
-          placeholder="e.g. Save for vacation"
+          placeholder="например, Сохранить на отпуск..."
         />
         {errors.name && <p className="error-message">{errors.name}</p>}
       </div>
@@ -175,7 +174,7 @@ const GoalForm = ({ goal, onClose }) => {
       {/* Target Amount */}
       <div>
         <label htmlFor="targetAmount" className="block text-sm font-medium text-gray-700 mb-1">
-          Target Amount (₽) *
+        Целевая сумма (₽) *
         </label>
         <input
           type="number"
@@ -196,7 +195,7 @@ const GoalForm = ({ goal, onClose }) => {
       {/* Current Amount */}
       <div>
         <label htmlFor="currentAmount" className="block text-sm font-medium text-gray-700 mb-1">
-          Current Amount (₽)
+        Текущая сумма (₽)
         </label>
         <input
           type="number"
@@ -217,7 +216,7 @@ const GoalForm = ({ goal, onClose }) => {
       {/* Target Date */}
       <div>
         <label htmlFor="targetDate" className="block text-sm font-medium text-gray-700 mb-1">
-          Target Date *
+        Целевая дата *
         </label>
         <input
           type="date"
@@ -235,7 +234,7 @@ const GoalForm = ({ goal, onClose }) => {
       {/* Description - Измененная структура для лейбла слева */}
       <div className="goal-form-group-horizontal"> {/* Новый класс для горизонтального расположения */}
         <label htmlFor="description" className="goal-form-label-horizontal text-sm font-medium text-gray-700">
-          Description <span className="text-xs text-gray-500">(max 50 chars)</span>
+          Описание <span className="text-xs text-gray-500">(макс 50 символов)</span>
         </label>
         <div className="goal-form-input-wrapper"> {/* Обертка для инпута и ошибки */}
           <textarea
@@ -248,7 +247,7 @@ const GoalForm = ({ goal, onClose }) => {
             className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
               errors.description ? 'input-error' : ''
             }`}
-            placeholder="Optional description"
+            placeholder="Описание цели..."
           ></textarea>
           {errors.description && <p className="error-message">{errors.description}</p>}
         </div>
@@ -262,14 +261,14 @@ const GoalForm = ({ goal, onClose }) => {
           // Используем более стандартные классы Tailwind для кнопок или твои .btn, если они переопределены
           className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
-          Cancel
+          Отмена
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
           className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
         >
-          {isSubmitting ? 'Saving...' : isEdit ? 'Update Goal' : 'Create Goal'}
+          {isSubmitting ? 'Сохранение...' : isEdit ? 'Обновить цель' : 'Создать цель'}
         </button>
       </div>
     </form>

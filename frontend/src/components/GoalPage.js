@@ -25,12 +25,12 @@ const GoalPage = () => {
   return (
     <div className="goals-page">
       <div className="goals-header">
-        <h1>Financial Goals</h1>
+        <h1>Финансовые цели</h1>
         <button 
           onClick={() => handleOpenForm()} 
           className="btn btn-primary"
         >
-          Create New Goal
+          Создать новую цель
         </button>
       </div>
 

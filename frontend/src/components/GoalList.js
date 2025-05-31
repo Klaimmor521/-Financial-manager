@@ -5,7 +5,7 @@ const GoalList = ({ goals, onEditGoal }) => {
   const { deleteGoal } = useGoalContext();
 
   const handleDelete = async (goalId) => {
-    if (window.confirm('Are you sure you want to delete this goal?')) {
+    if (window.confirm('Вы уверены, что хотите удалить эту цель?')) {
       await deleteGoal(goalId);
     }
   };
@@ -59,7 +59,7 @@ const GoalList = ({ goals, onEditGoal }) => {
   return (
     <div className="goals-list">
       {goals.length === 0 ? (
-        <p className="no-goals">No goals yet. Create your first goal!</p>
+        <p className="no-goals">Пока нет целей. Создайте свою первую цель!</p>
       ) : (
         goals.map(goal => {
           // Получаем безопасное значение процента
@@ -73,10 +73,10 @@ const GoalList = ({ goals, onEditGoal }) => {
                 <h3>{goal.name}</h3>
                 <div className="goal-actions">
                   <button onClick={() => onEditGoal(goal)} className="btn btn-edit">
-                    Edit
+                    Править
                   </button>
                   <button onClick={() => handleDelete(goal.id)} className="btn btn-delete">
-                    Delete
+                    Удалить
                   </button>
                 </div>
               </div>
@@ -95,9 +95,9 @@ const GoalList = ({ goals, onEditGoal }) => {
               </div>
 
               <div className="goal-details">
-                <p>Target: ₽{goal.target_amount ? goal.target_amount.toLocaleString() : '0'}</p>
-                <p>Current: ₽{goal.current_amount ? goal.current_amount.toLocaleString() : '0'}</p>
-                <p>Days remaining: {daysRemaining}</p>
+                <p>Целевая: ₽{goal.target_amount ? goal.target_amount.toLocaleString() : '0'}</p>
+                <p>Текущая: ₽{goal.current_amount ? goal.current_amount.toLocaleString() : '0'}</p>
+                <p>Осталось дней: {daysRemaining}</p>
               </div>
 
               {goal.description && (

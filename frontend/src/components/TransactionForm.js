@@ -62,41 +62,64 @@ const TransactionForm = ({ editTransaction, setEditTransaction, onSuccess }) => 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.type, token]); // Добавляем token в зависимости, если он может меняться (маловероятно, но для полноты)
 
-
-  // --- ИЗМЕНЕНИЕ/ДОБАВЛЕНИЕ ---> Начало функции валидации
   const validateForm = (data) => {
     const newErrors = {};
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     
-    let transactionDate = null;
-    if (data.date) {
-        transactionDate = new Date(data.date);
-        // Для корректного сравнения дат, особенно если инпут даты возвращает только YYYY-MM-DD,
-        // new Date() создаст дату с временем 00:00:00 в локальной таймзоне.
-        // Этого обычно достаточно для сравнения с today.setHours(0,0,0,0).
+    // --- НАЧАЛО ИЗМЕНЕНИЙ ДЛЯ ДАТЫ ---
+    const today = new Date();
+    // Форматируем 'today' в YYYY-MM-DD для сравнения
+    const todayFormatted = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  
+    let transactionDateFormatted = null;
+    let transactionDateValid = true;
+  
+    if (data.date) { // data.date - это строка "YYYY-MM-DD" из input
+      transactionDateFormatted = data.date; // Уже в нужном формате
+      // Проверим, валидна ли сама по себе дата (например, не 30 февраля)
+      const dateParts = data.date.split('-');
+      const year = parseInt(dateParts[0]);
+      const month = parseInt(dateParts[1]); // 1-12
+      const day = parseInt(dateParts[2]);
+      const tempDate = new Date(year, month - 1, day); // Месяцы 0-11
+  
+      if (
+        !(tempDate.getFullYear() === year &&
+        tempDate.getMonth() === month - 1 &&
+        tempDate.getDate() === day)
+      ) {
+        newErrors.date = 'Invalid date entered (e.g., non-existent day/month).';
+        transactionDateValid = false;
+      }
+  
+    } else {
+      newErrors.date = 'Date is required.';
+      transactionDateValid = false;
     }
-
+  
+    if (transactionDateValid && transactionDateFormatted && transactionDateFormatted > todayFormatted) {
+      // Сравниваем строки "YYYY-MM-DD" > "YYYY-MM-DD"
+      // Это сработает, так как лексикографическое сравнение даст правильный результат для этого формата
+      newErrors.date = 'Transaction date cannot be in the future.';
+    }
+    // --- КОНЕЦ ИЗМЕНЕНИЙ ДЛЯ ДАТЫ ---
+  
+    // Валидация Amount
     if (!data.amount || isNaN(data.amount) || parseFloat(data.amount) <= 0) {
       newErrors.amount = 'Amount must be a positive number.';
     }
+  
+    // Валидация Category
     if (!data.category) {
       newErrors.category = 'Category is required.';
     }
-    if (!data.date) {
-      newErrors.date = 'Date is required.';
-    } else if (transactionDate && transactionDate > today) {
-      newErrors.date = 'Transaction date cannot be in the future.';
-    }
-    
-    if (data.description && data.description.length > 50) 
-    {
+  
+    // Валидация Description
+    if (data.description && data.description.length > 50) {
       newErrors.description = 'Description cannot exceed 50 characters.';
     }
   
     return newErrors;
   };
-  // --- ИЗМЕНЕНИЕ/ДОБАВЛЕНИЕ ---> Конец функции валидации
 
   const handleTransactionSubmit = async (e) => {
     e.preventDefault();
