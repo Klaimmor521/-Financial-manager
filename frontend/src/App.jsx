@@ -9,18 +9,10 @@ import NavBar from './components/NavBar';
 import { GoalProvider } from './context/GoalContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Dashboard from './components/Dashboard';
+import ProtectedRoute from './components/ProtectedRoute';
 import ProfilePage from './components/ProfilePage';
 import ReportsPage from './components/ReportsPage';
-
-// Protected Route component
-const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  if (!token)
-  {
-    return <Navigate to="/login" replace />;
-  }
-  return children;  
-};
+import ImportPage from './components/ImportPage';
 
 function App() {
   const token = localStorage.getItem('token');
@@ -60,12 +52,20 @@ function App() {
             }
           />
           <Route
-            path="/reports" // <--- ДОБАВЬ ЭТОТ РОУТ
+            path="/reports"
             element={
             <ProtectedRoute>
                 <ReportsPage />
             </ProtectedRoute>
             }
+          />
+          <Route
+            path="/import"
+            element={
+              <ProtectedRoute>
+                <ImportPage />
+              </ProtectedRoute>
+            }   
           />
           </Routes>
         </div>

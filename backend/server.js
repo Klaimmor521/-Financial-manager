@@ -8,6 +8,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const importRoutes = require('./routes/importRoutes')
 require('dotenv').config();
 const path = require('path');
 
@@ -30,6 +31,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', profileRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/import', importRoutes);
 
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);

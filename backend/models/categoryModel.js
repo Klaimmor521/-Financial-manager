@@ -102,6 +102,28 @@ class Category {
     const result = await pool.query(query, queryParams);
     return result.rows;
   }
+
+  static async findUserCategoryByName(userId, name) {
+    const query = 'SELECT * FROM categories WHERE user_id = $1 AND lower(name) = lower($2) LIMIT 1';
+    try {
+        const result = await pool.query(query, [userId, name]); // name уже может быть в любом регистре, БД сама сравнит lower(name)
+        return result.rows[0];
+    } catch (error) {
+        console.error(`Error finding user category by name "${name}" for user ${userId}:`, error);
+        throw error;
+    }
+}
+
+  static async findSystemCategoryByName(name) {
+    const query = 'SELECT * FROM categories WHERE user_id IS NULL AND lower(name) = lower($1) LIMIT 1';
+    try {
+        const result = await pool.query(query, [name]); // name уже может быть в любом регистре
+        return result.rows[0];
+    } catch (error) {
+        console.error(`Error finding system category by name "${name}":`, error);
+        throw error;
+    }
+}
 }
 
 module.exports = Category;

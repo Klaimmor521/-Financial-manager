@@ -7,22 +7,24 @@ class AnalyticsModel
   {
     const { startDate, endDate } = dateRange;
     
+    // Запрос, который суммирует доходы и расходы ОТДЕЛЬНО для каждой категории
+    // и также возвращает "основной" тип категории для информации
     let query = `
       SELECT 
         c.id as category_id,
         c.name as category_name,
         c.icon as category_icon,
-        c.type as category_type,
-        COALESCE(SUM(t.amount), 0) as total_amount,
-        COUNT(t.id) as transaction_count
+        c.type as predefined_category_type, -- Основной тип категории из таблицы categories
+        COALESCE(SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END), 0) as total_income_in_category,
+        COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END), 0) as total_expense_in_category
       FROM categories c
       LEFT JOIN transactions t ON c.id = t.category_id
         AND t.user_id = $1
-        ${startDate ? 'AND t.created_at >= $2' : ''}
-        ${endDate ? `AND t.created_at <= $${startDate ? '3' : '2'}` : ''}
-      WHERE (c.user_id = $1 OR c.user_id IS NULL)
+        ${startDate ? "AND t.date >= $2" : ""}  -- Используем t.date для аналитики
+        ${endDate ? `AND t.date <= $${startDate ? '3' : '2'}` : ""}
+      WHERE (c.user_id = $1 OR c.user_id IS NULL) -- Категории пользователя или системные
       GROUP BY c.id, c.name, c.icon, c.type
-      ORDER BY total_amount DESC
+      ORDER BY c.name
     `;
     
     const params = [userId];
@@ -31,13 +33,45 @@ class AnalyticsModel
     
     const result = await pool.query(query, params);
     
-    // Группировка результатов по типу категории (доход/расход)
-    const grouped = {
-      income: result.rows.filter(row => row.category_type === 'income'),
-      expense: result.rows.filter(row => row.category_type === 'expense')
-    };
+    const categoryData = result.rows.map(row => ({
+        category_id: row.category_id,
+        category_name: row.category_name,
+        category_icon: row.category_icon,
+        predefined_category_type: row.predefined_category_type, // Тип, заданный для категории
+        total_income: parseFloat(row.total_income_in_category),
+        total_expense: parseFloat(row.total_expense_in_category),
+        // Можно добавить чистый баланс по категории, если нужно
+        // net_for_category: parseFloat(row.total_income_in_category) - parseFloat(row.total_expense_in_category)
+    }));
     
-    return grouped;
+    // Теперь на фронтенде CategoryChart будет решать, какие данные использовать
+    // для диаграммы 'income' и какие для 'expense' на основе этих сумм.
+    // Или можно здесь сразу сгруппировать, как раньше, но использовать total_income / total_expense.
+
+    const incomeCategories = categoryData
+        .filter(cat => cat.total_income > 0) // Категории, по которым были РЕАЛЬНЫЕ доходы
+        .map(cat => ({
+            category_id: cat.category_id,
+            category_name: cat.category_name,
+            category_icon: cat.category_icon,
+            total_amount: cat.total_income // Сумма для диаграммы доходов
+        })).sort((a,b) => b.total_amount - a.total_amount);
+
+    const expenseCategories = categoryData
+        .filter(cat => cat.total_expense > 0) // Категории, по которым были РЕАЛЬНЫЕ расходы
+        .map(cat => ({
+            category_id: cat.category_id,
+            category_name: cat.category_name,
+            category_icon: cat.category_icon,
+            total_amount: cat.total_expense // Сумма для диаграммы расходов
+        })).sort((a,b) => b.total_amount - a.total_amount);
+
+    return {
+      income: incomeCategories,
+      expense: expenseCategories,
+      // Можно также вернуть raw categoryData, если он нужен где-то еще
+      // allCategoryDetails: categoryData 
+    };
   }
   
   // Получить месячные тренды

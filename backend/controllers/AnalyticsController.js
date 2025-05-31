@@ -135,7 +135,6 @@ class AnalyticsController
 
 module.exports = AnalyticsController;
 
-
 function generateRecommendations(transactions, categories, totalExpense) {
   const recommendations = [];
 

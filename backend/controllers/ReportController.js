@@ -1,7 +1,5 @@
-const TransactionModel = require('../models/transactionModel'); // Убедись, что путь правильный
-const CategoryModel = require('../models/categoryModel'); // Предположим, что есть такая модель
+const TransactionModel = require('../models/transactionModel');
 
-// Вспомогательная функция для определения дат
 function getDatesForPeriod(type, year, month, quarter) {
     let startDate, endDate;
     year = parseInt(year);
@@ -10,52 +8,37 @@ function getDatesForPeriod(type, year, month, quarter) {
 
     switch (type) {
         case 'monthly':
-            if (!month || month < 1 || month > 12) {
-                throw new Error('Invalid month for monthly report.');
-            }
-            // Начало месяца: YYYY-MM-01
-            startDate = new Date(Date.UTC(year, month - 1, 1)); // UTC, чтобы избежать проблем с часовыми поясами
-            // Конец месяца: последний день месяца
-            endDate = new Date(Date.UTC(year, month, 0)); // день 0 следующего месяца = последний день текущего
+            if (!month || month < 1 || month > 12) throw new Error('Invalid month for monthly report.');
+            startDate = new Date(Date.UTC(year, month - 1, 1));
+            endDate = new Date(Date.UTC(year, month, 0));
             break;
         case 'quarterly':
-            if (!quarter || quarter < 1 || quarter > 4) {
-                throw new Error('Invalid quarter for quarterly report.');
-            }
-            const startMonth = (quarter - 1) * 3; // Q1: 0, Q2: 3, Q3: 6, Q4: 9 (для new Date)
+            if (!quarter || quarter < 1 || quarter > 4) throw new Error('Invalid quarter for quarterly report.');
+            const startMonth = (quarter - 1) * 3;
             startDate = new Date(Date.UTC(year, startMonth, 1));
             endDate = new Date(Date.UTC(year, startMonth + 3, 0));
             break;
         case 'yearly':
-            startDate = new Date(Date.UTC(year, 0, 1)); // 1 января
-            endDate = new Date(Date.UTC(year, 11, 31)); // 31 декабря
+            startDate = new Date(Date.UTC(year, 0, 1));
+            endDate = new Date(Date.UTC(year, 11, 31));
             break;
         default:
             throw new Error('Invalid report type.');
     }
-    // Форматируем даты в 'YYYY-MM-DD' для SQL, т.к. поле 'date' в БД типа 'date'
     const formatDate = (date) => date.toISOString().split('T')[0];
     return { startDate: formatDate(startDate), endDate: formatDate(endDate) };
 }
 
-// Вспомогательная функция для агрегации данных
+// Вспомогательная функция для агрегации данных (если она здесь)
 async function aggregateReportData(transactions) {
     let totalIncome = 0;
     let totalExpense = 0;
     const incomeByCategory = {};
     const expenseByCategory = {};
 
-    // Получим все категории один раз, чтобы не делать много запросов в цикле (если нужно)
-    // Либо предполагаем, что category_name уже есть в транзакциях благодаря JOIN
-    // const categories = await CategoryModel.findAll(); // Если есть такой метод
-    // const categoryMap = categories.reduce((map, cat) => {
-    //     map[cat.id] = cat.name;
-    //     return map;
-    // }, {});
-
     for (const t of transactions) {
         const amount = parseFloat(t.amount);
-        const categoryName = t.category_name || 'Uncategorized'; // Используем category_name из JOIN
+        const categoryName = t.category_name || 'Uncategorized';
 
         if (t.type === 'income') {
             totalIncome += amount;
@@ -65,7 +48,6 @@ async function aggregateReportData(transactions) {
             expenseByCategory[categoryName] = (expenseByCategory[categoryName] || 0) + amount;
         }
     }
-
     return {
         totalIncome: parseFloat(totalIncome.toFixed(2)),
         totalExpense: parseFloat(totalExpense.toFixed(2)),
@@ -76,9 +58,10 @@ async function aggregateReportData(transactions) {
         expenseByCategory: Object.fromEntries(
             Object.entries(expenseByCategory).map(([key, value]) => [key, parseFloat(value.toFixed(2))])
         ),
-        transactions: transactions // Можно решить, включать ли все транзакции в JSON ответа
+        transactions: transactions
     };
 }
+
 
 class ReportController {
     static async getReportData(req, res) {
@@ -91,16 +74,16 @@ class ReportController {
             }
 
             const { startDate, endDate } = getDatesForPeriod(type, year, month, quarter);
-            console.log(`Generating report for user ${userId}, type: ${type}, period: ${startDate} to ${endDate}`);
+            console.log(`[ReportController] Generating report for user ${userId}, type: ${type}, period: ${startDate} to ${endDate}`);
 
             const transactions = await TransactionModel.getTransactionsForReport(userId, startDate, endDate);
             
-            if (!transactions) { // Добавим проверку, хотя модель должна вернуть [] если ничего нет
+            if (!transactions || transactions.length === 0) { // Добавлена проверка на transactions.length === 0
                  console.log(`No transactions found for user ${userId} in period ${startDate} to ${endDate}`);
                  return res.json({ 
                     message: `No data for ${type} report, year ${year}`, 
                     period: { startDate, endDate },
-                    data: { // Возвращаем структуру с нулями
+                    data: {
                         totalIncome: 0,
                         totalExpense: 0,
                         netBalance: 0,
@@ -120,8 +103,8 @@ class ReportController {
             });
 
         } catch (error) {
-            console.error('Error generating report data:', error);
-            if (error.message.startsWith('Invalid')) { // Ошибки из getDatesForPeriod
+            console.error('[ReportController] Error generating report data:', error);
+            if (error.message.startsWith('Invalid')) {
                 return res.status(400).json({ error: error.message });
             }
             res.status(500).json({ error: 'Failed to generate report data.' });
@@ -138,55 +121,48 @@ class ReportController {
             }
 
             const { startDate, endDate } = getDatesForPeriod(type, year, month, quarter);
-            console.log(`Exporting report for user ${userId}, type: ${type}, period: ${startDate} to ${endDate}`);
+            console.log(`[ReportController] Exporting transactions for user ${userId}, type: ${type}, period: ${startDate} to ${endDate}`);
 
             const transactions = await TransactionModel.getTransactionsForReport(userId, startDate, endDate);
             
-            // Если транзакций нет, можно отправить пустой CSV или CSV с заголовками
-            if (!transactions || transactions.length === 0) {
-                const emptyCsvData = "Date,Type,Category,Description,Amount\n"; // Только заголовки
-                res.setHeader('Content-Type', 'text/csv');
-                const filename = `report-${type}-${year}${month ? '-'+month : ''}${quarter ? '-Q'+quarter : ''}.csv`;
-                res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-                return res.status(200).send(emptyCsvData);
-            }
-
-            const reportData = await aggregateReportData(transactions); // Агрегируем для итогов (если нужны в CSV)
-
-            // Формируем CSV строку
-            // Можно использовать библиотеку типа 'papaparse' или 'csv-stringify' для более сложного CSV,
-            // но для простого случая можно и вручную.
-
             let csvString = "";
-            // Заголовки для транзакций
             csvString += "Date,Type,Category,Description,Amount\n";
-            reportData.transactions.forEach(t => {
-                const description = t.description ? `"${t.description.replace(/"/g, '""')}"` : ''; // Экранируем кавычки в описании
-                csvString += `${t.date};${t.type},${t.category_name || 'Uncategorized'},${description},${t.amount}\n`;
-            });
 
-            // Добавляем итоговые суммы, если нужно
-            csvString += "\n"; // Пустая строка для разделения
-            csvString += "Summary\n";
-            csvString += `Total Income,${reportData.totalIncome}\n`;
-            csvString += `Total Expense,${reportData.totalExpense}\n`;
-            csvString += `Net Balance,${reportData.netBalance}\n`;
-            csvString += "\nIncome by Category\n";
-            for (const [category, sum] of Object.entries(reportData.incomeByCategory)) {
-                csvString += `"${category}",${sum}\n`;
+            if (!transactions || transactions.length === 0) {
+                console.log('[ReportController] No transactions to export for the selected period.');
+            } else {
+                transactions.forEach(t => {
+                    const description = t.description ? `"${t.description.replace(/"/g, '""')}"` : '';
+                    let formattedDate;
+                    if (t.date instanceof Date) {
+                        formattedDate = t.date.toISOString().split('T')[0];
+                    } else if (typeof t.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(t.date)) {
+                        formattedDate = t.date.split('T')[0];
+                    } else {
+                        try {
+                             formattedDate = new Date(t.date).toISOString().split('T')[0];
+                        } catch (e) {
+                            console.warn(`Could not format date for export: ${t.date}, using original or empty.`);
+                            formattedDate = t.date || '';
+                        }
+                    }
+                    const categoryName = t.category_name || 'Uncategorized';
+                    const amount = parseFloat(t.amount).toFixed(2);
+                    csvString += `${formattedDate},${t.type},"${categoryName.replace(/"/g, '""')}",${description},${amount}\n`;
+                });
             }
-            csvString += "\nExpense by Category\n";
-            for (const [category, sum] of Object.entries(reportData.expenseByCategory)) {
-                csvString += `"${category}",${sum}\n`;
-            }
+
+            let filename = `transactions-report-${type}-${year}`;
+            if (month) filename += `-${String(month).padStart(2, '0')}`;
+            if (quarter) filename += `-Q${quarter}`;
+            filename += '.csv';
 
             res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-            const filename = `report-${type}-${year}${month ? '-'+month : ''}${quarter ? '-Q'+quarter : ''}.csv`;
-            res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`); // Улучшенное имя файла для символов не из ASCII
-            res.status(200).send('\ufeff' + csvString); // <--- ДОБАВЛЯЕМ BOM ПЕРЕД СТРОКОЙ CSV
+            res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+            res.status(200).send('\ufeff' + csvString);
 
         } catch (error) {
-            console.error('Error exporting report to CSV:', error);
+            console.error('[ReportController] Error exporting report to CSV:', error);
             if (error.message.startsWith('Invalid')) {
                 return res.status(400).json({ error: error.message });
             }
@@ -195,4 +171,4 @@ class ReportController {
     }
 }
 
-module.exports = ReportController;
+module.exports = ReportController; // Не забудь это!
