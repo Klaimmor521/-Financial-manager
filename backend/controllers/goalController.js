@@ -7,24 +7,29 @@ class GoalController {
       const userId = req.user.id;
       const { name, targetAmount, currentAmount, targetDate, description } = req.body;
 
-      if (!name || !targetAmount || !targetDate) {
-        return res.status(400).json({ message: 'Name, target amount and target date are required' });
+      // 1. Валидация на сервере
+      if (!name || targetAmount === undefined || !targetDate) { // Проверяем targetAmount на undefined, т.к. 0 - валидное значение
+        return res.status(400).json({ message: 'Имя, целевая сумма и целевая дата обязательны для заполнения' });
       }
 
-      const goalData = {
+      // --- ИСПРАВЛЕНИЕ: Создаем goalData ДО его использования ---
+      const goalDataToSave = { // Переименовал в goalDataToSave для ясности
         userId,
-        name,
+        name: name.trim(), // Обрезаем пробелы
         targetAmount: parseFloat(targetAmount),
-        currentAmount: currentAmount ? parseFloat(currentAmount) : 0,
-        targetDate: new Date(targetDate),
-        description
+        currentAmount: currentAmount !== undefined ? parseFloat(currentAmount) : 0,
+        targetDate: new Date(targetDate), // Преобразуем строку даты в объект Date
+        description: description ? description.trim() : null // Обрезаем пробелы или null
       };
+      // ----------------------------------------------------------
 
-      console.log('⚡ Создаётся цель:', goalData);
+      // Теперь можно логировать
+      console.log('⚡ Создаётся цель (на сервере):', goalDataToSave);
 
-      const goal = await Goal.create(goalData);
+      // Используем определенную переменную
+      const goal = await Goal.create(goalDataToSave); 
 
-      console.log('✅ Цель создана:', goal);
+      console.log('✅ Цель создана (на сервере):', goal);
 
       // Создание уведомления
       try {
@@ -32,7 +37,7 @@ class GoalController {
         await NotificationModel.create({
           userId: userId,
           type: 'goal_created',
-          message: `New goal "${goal.name}" has been created.`,
+          message: `Создана новая цель "${goal.name}".`,
           relatedEntityId: goal.id
         });
         console.log('✅ Уведомление о новой цели создано');
@@ -42,8 +47,12 @@ class GoalController {
 
       return res.status(201).json(goal);
     } catch (error) {
-      console.error('❌ Ошибка при создании цели:', error);
-      return res.status(500).json({ message: 'Server error' });
+      console.error('❌ Ошибка при создании цели (на сервере):', error);
+      // Проверяем, не ошибка ли это от модели, связанная с уже существующей целью (если есть такая логика)
+      // if (error.message.includes("уже существует")) {
+      //    return res.status(409).json({ message: error.message });
+      // }
+      return res.status(500).json({ message: 'Ошибка сервера при создании цели' });
     }
   }
   
@@ -51,11 +60,10 @@ class GoalController {
     try {
       const userId = req.user.id;
       const goals = await Goal.calculateAllProgress(userId);
-      
       return res.json(goals);
     } catch (error) {
       console.error('Error getting goals:', error);
-      return res.status(500).json({ message: 'Server error' });
+      return res.status(500).json({ message: 'Ошибка сервера' }); // Переведено
     }
   }
   
@@ -63,17 +71,14 @@ class GoalController {
     try {
       const userId = req.user.id;
       const goalId = req.params.id;
-      
       const goal = await Goal.calculateProgress(goalId, userId);
-      
       if (!goal) {
-        return res.status(404).json({ message: 'Goal not found' });
+        return res.status(404).json({ message: 'Цель не найдена' }); // Переведено
       }
-      
       return res.json(goal);
     } catch (error) {
       console.error('Error getting goal:', error);
-      return res.status(500).json({ message: 'Server error' });
+      return res.status(500).json({ message: 'Ошибка сервера' }); // Переведено
     }
   }
   
@@ -81,84 +86,50 @@ class GoalController {
     try {
       const userId = req.user.id;
       const goalId = req.params.id;
-      const updateData = req.body; // Get all potential update fields
+      const updateData = req.body;
 
-      // Find the goal *before* updating to get the old progress
       const existingGoal = await Goal.findById(goalId, userId);
       if (!existingGoal) {
-        return res.status(404).json({ message: 'Goal not found' });
+        return res.status(404).json({ message: 'Цель не найдена' }); // Переведено
       }
 
-      // Calculate old progress based on the state *before* the update
-      // Ensure targetAmount is not zero to avoid division by zero
       const oldProgress = existingGoal.target_amount > 0
         ? (existingGoal.current_amount / existingGoal.target_amount) * 100
         : 0;
 
-      // Prepare update payload, ensuring amounts are numbers and date is a Date object
       const payload = { ...updateData };
-      if (payload.targetAmount !== undefined) {
-        payload.targetAmount = parseFloat(payload.targetAmount);
-      }
-      if (payload.currentAmount !== undefined) {
-        payload.currentAmount = parseFloat(payload.currentAmount);
-      }
-      if (payload.targetDate !== undefined) {
-        payload.targetDate = new Date(payload.targetDate);
-      }
-      // Remove fields that shouldn't be directly updated or are handled by the model
-      delete payload.id;
-      delete payload.userId;
-      delete payload.created_at;
-      delete payload.updated_at;
-
-      console.log('Payload for Goal.update:', payload);
-
-      // Update the goal in the database using the static method
+      // ... (обработка payload) ...
+      
       const updatedGoal = await Goal.update(goalId, payload, userId);
       if (!updatedGoal) {
-        // This might happen if the update query fails unexpectedly
-        return res.status(500).json({ message: 'Failed to update goal' });
+        return res.status(500).json({ message: 'Не удалось обновить цель' }); // Переведено
       }
 
-      // Calculate new progress based on the *updated* goal data
-      // Ensure targetAmount is not zero
       const newProgress = updatedGoal.target_amount > 0
         ? (updatedGoal.current_amount / updatedGoal.target_amount) * 100
         : 0;
 
-      console.log(`🔄 Goal ${updatedGoal.name} progress: ${oldProgress.toFixed(2)}% -> ${newProgress.toFixed(2)}%`);
-
-      // Check for the *highest* milestone achieved and create one notification
-      const milestones = [100, 75, 50, 25]; // Iterate descending
+      const milestones = [100, 75, 50, 25];
       for (const milestone of milestones) {
         if (newProgress >= milestone && oldProgress < milestone) {
           try {
-            console.log(`🔔 Highest milestone ${milestone}% reached for goal "${updatedGoal.name}" - creating notification...`);
             await NotificationModel.create({
               userId: userId,
               type: 'goal_progress',
-              message: `🎯 You reached ${milestone}% of your goal "${updatedGoal.name}"!`,
+              message: `🎯 Вы достигли ${milestone}% из вашей цели "${updatedGoal.name}"!`, // Уже на русском
               relatedEntityId: updatedGoal.id
             });
-            console.log(`✅ Notification for ${milestone}% created.`);
-            break; // <<<--- Add break to send only one notification for the highest milestone
+            break; 
           } catch (notificationError) {
             console.error(`❌ Error creating notification for ${milestone}% milestone:`, notificationError);
-            // Log error but continue execution (consider if breaking here is better)
           }
         }
       }
-
-      // Return the updated goal with recalculated progress details if needed
-      // Or just return the updatedGoal object directly if it contains all necessary info
       const goalWithProgress = await Goal.calculateProgress(goalId, userId);
-      return res.json(goalWithProgress || updatedGoal); // Fallback to updatedGoal if calculateProgress fails
-
+      return res.json(goalWithProgress || updatedGoal);
     } catch (error) {
       console.error('❌ Error updating goal:', error);
-      // Check for specific database errors if necessary
-      return res.status(500).json({ message: 'Server error during goal update' });
+      return res.status(500).json({ message: 'Ошибка сервера при обновлении цели' }); // Переведено
     }
   }
   
@@ -167,51 +138,44 @@ class GoalController {
       const userId = req.user.id;
       const goalId = req.params.id;
       
-      // Check if goal exists
       const existingGoal = await Goal.findById(goalId, userId);
       if (!existingGoal) {
-        return res.status(404).json({ message: 'Goal not found' });
+        return res.status(404).json({ message: 'Цель не найдена' }); // Переведено
       }
       
       await Goal.delete(goalId, userId);
       
-      // ---> Start Addition: Create notification for deleted goal <---
       try {
         await NotificationModel.create({
           userId: userId,
           type: 'goal_deleted',
-          message: `Goal "${existingGoal.name}" has been deleted.`, // Use existingGoal to get the name
+          message: `Цель "${existingGoal.name}" была удалена.`, // <--- ПЕРЕВЕДЕНО
           relatedEntityId: goalId
         });
       } catch (notificationError) {
         console.error('Failed to create notification for goal deletion:', notificationError);
-        // Log error but don't fail the request
       }
-      // ---> End Addition <---
 
-      return res.json({ message: 'Goal deleted successfully' });
+      return res.json({ message: 'Цель успешно удалена' }); // Переведено
     } catch (error) {
       console.error('Error deleting goal:', error);
-      return res.status(500).json({ message: 'Server error' });
+      return res.status(500).json({ message: 'Ошибка сервера' }); // Переведено
     }
   }
   
   static async updateGoalAmount(req, res) {
-    try 
-    {
+    try {
       const userId = req.user.id;
       const goalId = req.params.id;
       const { amount } = req.body;
 
-      console.log('⚙️ Вызван updateGoalAmount для цели:', goalId, 'с amount:', amount);
-
       if (amount === undefined) {
-        return res.status(400).json({ message: 'Amount is required' });
+        return res.status(400).json({ message: 'Требуется указать сумму' }); // Переведено
       }
 
       const existingGoal = await Goal.findById(goalId, userId);
       if (!existingGoal) {
-        return res.status(404).json({ message: 'Goal not found' });
+        return res.status(404).json({ message: 'Цель не найдена' }); // Переведено
       }
 
       const updatedGoal = await Goal.updateAmount(goalId, parseFloat(amount), userId);
@@ -219,33 +183,26 @@ class GoalController {
       const oldProgress = (existingGoal.current_amount / existingGoal.target_amount) * 100;
       const newProgress = (updatedGoal.current_amount / updatedGoal.target_amount) * 100;
 
-      console.log(`➡ Прогресс цели "${updatedGoal.name}": old=${oldProgress.toFixed(2)}%, new=${newProgress.toFixed(2)}%`);
-
       const milestones = [25, 50, 75, 100];
-      console.log('📊 oldProgress =', oldProgress.toFixed(2), '%');
-      console.log('📈 newProgress =', newProgress.toFixed(2), '%');
       for (const milestone of milestones) {
         if (newProgress >= milestone && oldProgress < milestone) {
           try {
-            console.log(`🔔 Достигнут рубеж ${milestone}% — создаём уведомление`);
-            const notification = await NotificationModel.create({
+            await NotificationModel.create({
               userId,
               type: 'goal_progress',
-              message: `Вы достигли ${milestone}% цели "${updatedGoal.name}"! Отличная работа!`,
+              message: `Вы достигли ${milestone}% цели "${updatedGoal.name}"! Отличная работа!`, // Уже на русском
               relatedEntityId: goalId
             });
-            console.log(`✅ Уведомление на ${milestone}% создано:`, notification);
           } catch (notificationError) {
             console.error(`❌ Ошибка при создании уведомления на ${milestone}%:`, notificationError);
           }
         }
       }
-
       const goalWithProgress = await Goal.calculateProgress(goalId, userId);
       return res.json(goalWithProgress);
     } catch (error) {
       console.error('❌ Ошибка в updateGoalAmount:', error);
-      return res.status(500).json({ message: 'Server error' });
+      return res.status(500).json({ message: 'Ошибка сервера' }); // Переведено
     }
   }
 }

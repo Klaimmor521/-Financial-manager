@@ -9,16 +9,16 @@ class TransactionController {
       const userId = req.user.id;
   
       if (!amount || !type || !categoryId) {
-        return res.status(400).json({ message: 'Amount, type and category are required' });
+        return res.status(400).json({ message: 'Требуется указать количество, тип и категорию' });
       }
   
       if (type !== 'income' && type !== 'expense') {
-        return res.status(400).json({ message: 'Type must be either income or expense' });
+        return res.status(400).json({ message: 'Типом должен быть либо доход, либо расход' });
       }
   
       const category = await Category.findById(categoryId);
       if (!category) {
-        return res.status(404).json({ message: 'Category not found' });
+        return res.status(404).json({ message: 'Категория не найдена' });
       }
 
       const transactionDate = new Date(date); // date из req.body
@@ -26,7 +26,7 @@ class TransactionController {
       today.setHours(23, 59, 59, 999); // Сравниваем с концом сегодняшнего дня
 
       if (transactionDate > today) {
-        return res.status(400).json({ message: 'Transaction date cannot be in the future.' });
+        return res.status(400).json({ message: 'Дата транзакции не может быть перенесена в будущее.' });
       }
   
       // Создаем транзакцию
@@ -50,13 +50,13 @@ class TransactionController {
       }
       
       // Отправляем ОДИН ответ клиенту
-      return res.status(201).json({ success: true, message: 'Transaction created successfully', data: newTransaction });
+      return res.status(201).json({ success: true, message: 'Транзакция успешно создана', data: newTransaction });
   
     } catch (error) {
       // Логируем ошибку на сервере
       console.error('Error creating transaction:', error);
       // Отправляем общий ответ об ошибке клиенту
-      return res.status(500).json({ success: false, message: 'Error creating transaction', error: error.message });
+      return res.status(500).json({ success: false, message: 'Ошибка при создании транзакции', error: error.message });
     }
   }
 
@@ -66,7 +66,7 @@ class TransactionController {
       const transactions = await Transaction.findAll(userId, req.query);
       res.status(200).json({ success: true, count: transactions.length, data: transactions });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Error fetching transactions', error: error.message });
+      res.status(500).json({ success: false, message: 'Ошибка при выборке транзакций', error: error.message });
     }
   }
 
@@ -77,12 +77,12 @@ class TransactionController {
       const transaction = await Transaction.findById(id, userId);
 
       if (!transaction) {
-        return res.status(404).json({ success: false, message: 'Transaction not found' });
+        return res.status(404).json({ success: false, message: 'Транзакция не найдена' });
       }
 
       res.status(200).json({ success: true, data: transaction });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Error fetching transaction', error: error.message });
+      res.status(500).json({ success: false, message: 'Транзакция выборки ошибок', error: error.message });
     }
   }
 
@@ -94,17 +94,17 @@ class TransactionController {
 
       const existingTransaction = await Transaction.findById(id, userId);
       if (!existingTransaction) {
-        return res.status(404).json({ success: false, message: 'Transaction not found' });
+        return res.status(404).json({ success: false, message: 'Транзакция не найдена' });
       }
 
       if (type && type !== 'income' && type !== 'expense') {
-        return res.status(400).json({ message: 'Type must be either income or expense' });
+        return res.status(400).json({ message: 'Типом должен быть либо доход, либо расход' });
       }
 
       if (categoryId) {
         const category = await Category.findById(categoryId);
         if (!category) {
-          return res.status(404).json({ message: 'Category not found' });
+          return res.status(404).json({ message: 'Категория не найдена' });
         }
       }
 
@@ -115,9 +115,9 @@ class TransactionController {
         description: description !== undefined ? description : existingTransaction.description
       }, userId);
 
-      res.status(200).json({ success: true, message: 'Transaction updated successfully', data: updated });
+      res.status(200).json({ success: true, message: 'Транзакция успешно обновлена', data: updated });
     } catch (error) {
-      res.status(500).json({ success: false, message: 'Error updating transaction', error: error.message });
+      res.status(500).json({ success: false, message: 'Ошибка при обновлении транзакции', error: error.message });
     }
   }
 

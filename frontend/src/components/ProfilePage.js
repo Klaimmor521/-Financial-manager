@@ -7,14 +7,34 @@ const ProfilePage = () => {
     const navigate = useNavigate();
     const [profileData, setProfileData] = useState(null);
     const [editProfile, setEditProfile] = useState(false);
-    const [updatedProfile, setUpdatedProfile] = useState({ username: '', email: '', avatar_url: '' });
+    const [updatedProfile, setUpdatedProfile] = useState({ username: '', email: '', avatar: '' });
     const [isLoading, setIsLoading] = useState(true); // Состояние загрузки
     const [error, setError] = useState(null);
+    const [formErrors, setFormErrors] = useState({});
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(null);
     const fileInputRef = useRef(null);
 
     const API_BASE_URL = `http://localhost:5000`;
+
+    // ProfilePage.js
+
+    const validateProfileForm = () => {
+        const errors = {};
+        if (!updatedProfile.username.trim()) {
+            errors.username = "Имя пользователя обязательно для заполнения.";
+        } else if (updatedProfile.username.length < 3) {
+            errors.username = "Имя пользователя должно содержать не менее 3 символов.";
+        }
+        // Простая проверка формата email
+        if (!updatedProfile.email.trim()) {
+            errors.email = "Email обязателен для заполнения.";
+        } else if (!/\S+@\S+\.\S+/.test(updatedProfile.email)) {
+            errors.email = "Некорректный формат email.";
+        }
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0; // true если нет ошибок
+    };
 
     // Используем useCallback для fetchProfileData, чтобы не создавать функцию заново при каждом рендере
     const fetchProfileData = useCallback(async () => {
@@ -37,7 +57,7 @@ const ProfilePage = () => {
             }
         } catch (err) {
             console.error("Error fetching profile:", err);
-            setError("Failed to fetch profile. Please try again later.");
+            setError("Не удалось получить доступ к профилю. Пожалуйста, повторите попытку позже.");
             toast.error("Failed to fetch profile data.");
             if (err.response && err.response.status === 401) {
                 localStorage.removeItem('token');
@@ -135,7 +155,7 @@ const ProfilePage = () => {
             toast.success('Avatar updated successfully!');
         } catch (err) {
             console.error("Error updating avatar:", err.response ? err.response.data : err.message);
-            const errorMessage = err.response?.data?.error || "Failed to update avatar.";
+            const errorMessage = err.response?.data?.error || "Не удалось обновить аватар.";
             setError(errorMessage);
             toast.error(errorMessage);
 
@@ -155,11 +175,16 @@ const ProfilePage = () => {
         }
     };
 
-    const handleSaveProfileDetails = async () => { // Переименовано из handleSaveProfile
-        setError(null);
+    
+    const handleSaveProfileDetails = async () => {
+        setError(null); // Сбрасываем общую ошибку сервера
+        setFormErrors({}); // Сбрасываем ошибки формы
+
+        if (!validateProfileForm()) { // Вызываем валидацию
+            return; // Если есть ошибки, не отправляем
+        }
+
         try {
-            // В этой функции мы НЕ отправляем файл аватара, только текстовые данные.
-            // Файл аватара обрабатывается отдельно через handleSaveAvatar или при его выборе.
             const dataToSend = {
                 username: updatedProfile.username,
                 email: updatedProfile.email,
@@ -167,17 +192,29 @@ const ProfilePage = () => {
 
             const response = await axios.put(`${API_BASE_URL}/api/users/profile`, dataToSend, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                 // 'Content-Type' здесь будет 'application/json' по умолчанию с Axios для объекта
             });
             setProfileData(prevData => ({ ...prevData, ...response.data }));
-            setUpdatedProfile(prevValues => ({ ...prevValues, ...response.data }));
+            // setUpdatedProfile(prevValues => ({ ...prevValues, ...response.data })); // Обновится из profileData при след. открытии формы
             setEditProfile(false);
-            toast.success('Profile details updated successfully!');
+            toast.success('Данные профиля успешно обновлены!');
         } catch (err) {
             console.error("Error updating profile details:", err);
-            const errorMessage = err.response?.data?.error || "Failed to update profile. Please try again later.";
-            setError(errorMessage);
-            toast.error(errorMessage);
+            // Обработка ошибок уникальности с бэкенда
+            if (err.response && err.response.data && err.response.data.error) {
+                const serverError = err.response.data.error;
+                if (serverError.toLowerCase().includes('email already in use') || serverError.toLowerCase().includes('почта уже используется')) {
+                    setFormErrors(prevErrors => ({ ...prevErrors, email: 'Эта электронная почта уже используется.' }));
+                } else if (serverError.toLowerCase().includes('username already in use') || serverError.toLowerCase().includes('имя пользователя уже используется')) {
+                    setFormErrors(prevErrors => ({ ...prevErrors, username: 'Это имя пользователя уже используется.' }));
+                } else {
+                    setError(serverError); // Общая ошибка сервера
+                }
+                toast.error(serverError);
+            } else {
+                const genericMessage = "Не удалось обновить профиль. Пожалуйста, повторите попытку позже.";
+                setError(genericMessage);
+                toast.error(genericMessage);
+            }
         }
     };
 
@@ -186,7 +223,7 @@ const ProfilePage = () => {
             toast.info("No avatar to delete.");
             return;
         }
-        if (window.confirm("Are you sure you want to delete your avatar?")) {
+        if (window.confirm("Вы уверены, что хотите удалить свой аватар?")) {
             setError(null);
             try {
                 // Для удаления аватара отправляем запрос на обновление профиля
@@ -207,7 +244,7 @@ const ProfilePage = () => {
                 toast.success('Avatar deleted successfully!');
             } catch (err) {
                 console.error("Error deleting avatar:", err);
-                const errorMessage = err.response?.data?.error || "Failed to delete avatar.";
+                const errorMessage = err.response?.data?.error || "Не удалось удалить аватар.";
                 setError(errorMessage);
                 toast.error(errorMessage);
             }
@@ -215,7 +252,7 @@ const ProfilePage = () => {
     };
 
     const handleDeleteAccount = async () => {
-        if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+        if (window.confirm("Вы уверены, что хотите удалить свою учетную запись? Это действие невозможно отменить.")) {
             setError(null);
             try {
                 await axios.delete(`${API_BASE_URL}/api/users/profile`, {
@@ -226,27 +263,27 @@ const ProfilePage = () => {
                 navigate('/login'); // Или на страницу регистрации
             } catch (err) {
                 console.error("Error deleting account:", err);
-                const errorMessage = err.response?.data?.error || "Failed to delete account. Please try again later.";
+                const errorMessage = err.response?.data?.error || "Не удалось удалить учетную запись. Пожалуйста, повторите попытку позже.";
                 setError(errorMessage);
                 toast.error(errorMessage);
             }
         }
     };
 
-    if (isLoading) return <div>Loading profile...</div>;
-    if (!profileData && !isLoading) return <div>Error loading profile. {error || "Please try refreshing the page."}</div>;
-    if (!profileData) return <div>No profile data available.</div>;
+    if (isLoading) return <div>Загрузка профиля...</div>;
+    if (!profileData && !isLoading) return <div>Ошибка при загрузке профиля.{error || "Пожалуйста, попробуйте обновить страницу."}</div>;
+    if (!profileData) return <div>Данные профиля недоступны.</div>;
 
     return (
         <div className="profile-page-container"> {/* Общий контейнер для страницы */}
-            <h2>Profile</h2>
+            <h2>Профиль</h2>
             {error && <div className="alert alert-danger">{error}</div>}
 
             {/* Секция Аватара - видна всегда */}
             <div className="avatar-section">
                 <img
                     src={avatarPreview || 'https://via.placeholder.com/150?text=No+Avatar'} // Заглушка, если нет аватара
-                    alt="User Avatar"
+                    alt="Аватар"
                     className="profile-avatar-image"
                 />
                 <input
@@ -261,14 +298,14 @@ const ProfilePage = () => {
                         className="btn btn-sm btn-outline-primary" 
                         onClick={() => fileInputRef.current.click()} // Триггерим клик по скрытому input
                     >
-                        {profileData.avatar ? 'Change Avatar' : 'Upload Avatar'}
+                        {profileData.avatar ? 'Сменить аватар' : 'Загрузить аватар'}
                     </button>
                     {profileData.avatar && (
                         <button 
                             className="btn btn-sm btn-outline-danger"
                             onClick={handleDeleteAvatar}
                         >
-                            Delete Avatar
+                            Удалить аватар
                         </button>
                     )}
                 </div>
@@ -278,7 +315,7 @@ const ProfilePage = () => {
             {editProfile ? (
                 <div className="edit-profile-form">
                     <div>
-                        <label htmlFor="username">Username:</label>
+                        <label htmlFor="username">Имя пользователя:</label>
                         <input
                             type="text"
                             id="username"
@@ -286,9 +323,10 @@ const ProfilePage = () => {
                             value={updatedProfile.username}
                             onChange={handleInputChange}
                         />
+                        {formErrors.username && <p style={{ color: 'red', fontSize: '0.8em', marginTop: '5px' }}>{formErrors.username}</p>} {/* Отображение ошибки */}
                     </div>
                     <div>
-                        <label htmlFor="email">Email:</label>
+                        <label htmlFor="email">Электронная почта:</label>
                         <input
                             type="email"
                             id="email"
@@ -296,8 +334,9 @@ const ProfilePage = () => {
                             value={updatedProfile.email}
                             onChange={handleInputChange}
                         />
+                        {formErrors.email && <p style={{ color: 'red', fontSize: '0.8em', marginTop: '5px' }}>{formErrors.email}</p>} {/* Отображение ошибки */}
                     </div>
-                    <button onClick={handleSaveProfileDetails}>Save Details</button>
+                    <button onClick={handleSaveProfileDetails}>Сохранить детали</button>
                     <button onClick={() => {
                         setEditProfile(false);
                         setUpdatedProfile({
@@ -315,16 +354,16 @@ const ProfilePage = () => {
                 </div>
             ) : (
                 <div className="profile-details">
-                    <p><strong>Username:</strong> {profileData.username}</p>
-                    <p><strong>Email:</strong> {profileData.email}</p>
-                    <p><strong>Joined:</strong> {new Date(profileData.created_at).toLocaleDateString()}</p>
-                    <p><strong>Goal Count:</strong> {profileData.goalCount ?? 'N/A'}</p>
-                    <p><strong>Total Income:</strong> {profileData.incomeSum?.toFixed(2) ?? 'N/A'}</p>
-                    <p><strong>Total Expense:</strong> {profileData.expenseSum?.toFixed(2) ?? 'N/A'}</p>
+                    <p><strong>Имя пользователя:</strong> {profileData.username}</p>
+                    <p><strong>Электронная почта:</strong> {profileData.email}</p>
+                    <p><strong>Присоединился:</strong> {new Date(profileData.created_at).toLocaleDateString()}</p>
+                    <p><strong>Количество целей:</strong> {profileData.goalCount ?? 'N/A'}</p>
+                    <p><strong>Общий доход:</strong> {profileData.incomeSum?.toFixed(2) ?? 'N/A'}</p>
+                    <p><strong>Общая сумма расходов:</strong> {profileData.expenseSum?.toFixed(2) ?? 'N/A'}</p>
 
-                    <button onClick={() => setEditProfile(true)}>Edit Profile Details</button>
+                    <button onClick={() => setEditProfile(true)}>Редактировать профиль</button>
                     <button onClick={handleDeleteAccount} className="btn btn-danger" style={{ marginLeft: '10px' }}>
-                        Delete Account
+                    Удалить учетную запись
                     </button>
                 </div>
             )}

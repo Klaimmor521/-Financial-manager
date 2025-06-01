@@ -99,110 +99,118 @@ class UserController {
   }
   
   
-  static async updateUserProfile(req, res) 
-  {
+  static async updateUserProfile(req, res) {
     try {
         const userId = req.user.id;
-        // Текстовые поля из req.body (FormData или обычный JSON)
-        // avatar_url_action - это наше специальное поле, которое клиент может прислать,
-        // если он хочет удалить аватар (в этом случае avatar_url_action будет null или 'DELETE')
-        const { username, email, avatar: avatarUrlAction } = req.body;
+        // Получаем данные из тела запроса. Файл аватара (если есть) будет в req.file.
+        const { username, email, avatar: avatarAction } = req.body; 
+        // avatarAction может быть null, если клиент хочет удалить аватар.
+        // Если клиент просто не прислал поле avatar, avatarAction будет undefined.
 
-        let updatedData = {}; // Объект для данных, которые пойдут в UserModel.updateUser
+        console.log(`[UserController] Attempting to update profile for user: ${userId}`);
+        console.log('[UserController] Received body:', req.body);
+        if(req.file) console.log('[UserController] Received file:', req.file.filename);
 
-        // Получаем текущего пользователя, чтобы знать его текущие данные и старый avatar_url
-        const currentUser = await UserModel.getUserById(userId);
+        let dataToUpdateInDB = {}; // Данные, которые реально пойдут в UserModel.updateUser
+
+        // --- Валидация и подготовка текстовых полей ---
+        if (username !== undefined) { // Если поле username пришло в запросе
+            if (typeof username !== 'string' || username.trim().length < 3) {
+                return res.status(400).json({ error: 'Имя пользователя должно содержать не менее 3 символов.' });
+            }
+            dataToUpdateInDB.username = username.trim();
+        }
+
+        if (email !== undefined) { // Если поле email пришло в запросе
+            if (typeof email !== 'string' || !/\S+@\S+\.\S+/.test(email)) {
+                return res.status(400).json({ error: 'Некорректный формат email.' });
+            }
+            dataToUpdateInDB.email = email.trim().toLowerCase(); // Приводим email к нижнему регистру для консистентности
+        }
+
+        // --- Логика обработки аватара ---
+        const currentUser = await UserModel.getUserById(userId); // Нужен для получения старого пути аватара
         if (!currentUser) {
-            return res.status(404).json({ message: "User not found to update." });
+            // Эта ситуация маловероятна, если authMiddleware работает, но для полноты
+            return res.status(404).json({ message: "Пользователь для обновления не найден." });
         }
 
-        // 1. Обновляем текстовые поля, если они пришли и отличаются от текущих
-        if (username && username !== currentUser.username) {
-            updatedData.username = username;
-        }
-        if (email && email !== currentUser.email) {
-            // Здесь можно добавить проверку на уникальность email, если UserModel.updateUser этого не делает
-            updatedData.email = email;
-        }
-
-        // 2. Логика обработки аватара
-        if (req.file) { // Если был загружен новый файл (multer добавил его в req.file)
-            console.log('New avatar file uploaded:', req.file.filename);
+        if (req.file) { // Если был загружен новый файл аватара
+            console.log('[UserController] New avatar file uploaded:', req.file.filename);
             // Удаляем старый аватар, если он был
-            if (currentUser.avatar) {
-                // currentUser.avatar_url хранит относительный путь типа '/uploads/avatars/file.jpg'
-                // path.join строит корректный путь к файлу на сервере
-                // __dirname - это папка, где находится userController.js (backend/controllers)
-                // '../' - поднимаемся на уровень выше (в backend/)
-                // '../' - еще раз (в корень проекта, где лежит папка uploads)
-                const oldAvatarPath = path.join(__dirname, '..', '..', currentUser.avatar);
+            if (currentUser.avatar) { // currentUser.avatar должен хранить путь типа '/uploads/avatars/file.jpg'
+                const oldAvatarPath = path.join(__dirname, '..', '..', currentUser.avatar); // Путь от корня проекта
                 if (fs.existsSync(oldAvatarPath)) {
                     try {
                         fs.unlinkSync(oldAvatarPath);
-                        console.log('Successfully deleted old avatar:', oldAvatarPath);
+                        console.log('[UserController] Successfully deleted old avatar:', oldAvatarPath);
                     } catch (unlinkErr) {
-                        console.error('Error deleting old avatar file:', unlinkErr);
-                        // Не прерываем операцию, если старый файл не удалился
+                        console.error('[UserController] Error deleting old avatar file:', unlinkErr);
                     }
                 }
             }
-            // Сохраняем относительный путь к новому файлу для доступа через URL
-            // req.file.path от multer это 'uploads/avatars/filename.jpg'
-            updatedData.avatar = `/${req.file.path.replace(/\\/g, '/')}`; // Добавляем слэш в начало и нормализуем слэши
-        } else if (avatarUrlAction === null && currentUser.avatar) {
-            // Если клиент прислал avatar_url: null (сигнал на удаление) И у пользователя есть аватар
-            console.log('Action to delete avatar received.');
+            // Сохраняем относительный путь к новому файлу (multer сохраняет в req.file.path)
+            dataToUpdateInDB.avatar = `/${req.file.path.replace(/\\/g, '/')}`;
+        } else if (avatarAction === null && currentUser.avatar) { 
+            // Если клиент явно прислал avatar: null (сигнал на удаление) И у пользователя есть аватар
+            console.log('[UserController] Action to delete avatar received.');
             const oldAvatarPath = path.join(__dirname, '..', '..', currentUser.avatar);
             if (fs.existsSync(oldAvatarPath)) {
                 try {
                     fs.unlinkSync(oldAvatarPath);
-                    console.log('Successfully deleted avatar on request:', oldAvatarPath);
+                    console.log('[UserController] Successfully deleted avatar on request:', oldAvatarPath);
                 } catch (unlinkErr) {
-                    console.error('Error deleting avatar file on request:', unlinkErr);
+                    console.error('[UserController] Error deleting avatar file on request:', unlinkErr);
                 }
             }
-            updatedData.avatar = null; // Устанавливаем null в БД
+            dataToUpdateInDB.avatar = null; // Устанавливаем null в БД
         }
-        // Если ни req.file, ни avatarUrlAction === null, то аватар не трогаем,
-        // и updatedData.avatar_url не будет определено, UserModel.updateUser его не изменит.
+        // Если req.file нет и avatarAction не null, то поле avatar не меняется в dataToUpdateInDB,
+        // и UserModel.updateUser не будет его обновлять, если оно не передано в updatedData.
 
-        // Если нет никаких данных для обновления (ни текстовых полей, ни аватара)
-        if (Object.keys(updatedData).length === 0) {
-            console.log('No changes to profile data.');
-            // Возвращаем текущие данные пользователя (включая avatar_url, если он есть)
+        // Проверяем, есть ли вообще что обновлять (кроме updated_at, которое модель добавит)
+        if (Object.keys(dataToUpdateInDB).length === 0) {
+            console.log('[UserController] No actual data changes to update profile.');
+            // Возвращаем текущие данные пользователя, так как ничего не изменилось
+            // (Модель UserModel.updateUser также должна это обрабатывать и возвращать текущего пользователя)
             return res.json({
                 id: currentUser.id,
                 username: currentUser.username,
                 email: currentUser.email,
-                avatar: currentUser.avatar // Убедись, что это поле есть
+                avatar: currentUser.avatar,
+                created_at: currentUser.created_at // Добавим для полноты, если фронт ожидает
             });
         }
+        
+        console.log('[UserController] Data to update in DB:', dataToUpdateInDB);
+        const updatedUserFromDB = await UserModel.updateUser(userId, dataToUpdateInDB);
 
-        // Обновляем пользователя в БД
-        const updatedUserFromDB = await UserModel.updateUser(userId, updatedData);
-
-        // Формируем ответ клиенту
+        // Формируем ответ клиенту (без пароля и других чувствительных данных)
         const responseUser = {
             id: updatedUserFromDB.id,
             username: updatedUserFromDB.username,
             email: updatedUserFromDB.email,
-            avatar: updatedUserFromDB.avatar // Это поле должно быть в ответе UserModel.updateUser
+            avatar: updatedUserFromDB.avatar,
+            created_at: updatedUserFromDB.created_at // Если нужно на фронте
         };
         res.json(responseUser);
 
     } catch (error) {
-        console.error('Error updating user profile:', error);
-        // Обработка ошибок от multer (например, файл слишком большой или не тот тип)
+        console.error('[UserController] Error updating user profile:', error);
+        
         if (error instanceof multer.MulterError) {
-            return res.status(400).json({ error: `Multer error: ${error.message}` });
-        } else if (error.message === 'Only image files are allowed!') { // Ошибка из нашего fileFilter
-            return res.status(400).json({ error: error.message });
+            return res.status(400).json({ error: `Ошибка загрузки файла: ${error.message}` });
+        } else if (error.message === 'Only image files are allowed!') {
+            return res.status(400).json({ error: "Разрешены только файлы изображений!" });
+        } else if (error.message === 'Email already in use') {
+            return res.status(409).json({ error: 'Эта электронная почта уже используется.' });
+        } else if (error.message === 'Username already in use') {
+            return res.status(409).json({ error: 'Это имя пользователя уже используется.' });
+        } else if (error.message === 'Unique constraint violation') {
+             return res.status(409).json({ error: 'Имя пользователя или email уже существуют.' });
         }
-        // Обработка других специфических ошибок
-        if (error.message === 'Email already in use' || (error.code === '23505' && error.constraint && error.constraint.includes('email'))) { // Более надежная проверка ошибки уникальности email
-            return res.status(409).json({ error: 'Email already in use' });
-        }
-        res.status(500).json({ error: 'Server error while updating profile' });
+        
+        res.status(500).json({ error: 'Ошибка сервера при обновлении профиля.' });
     }
   }
   

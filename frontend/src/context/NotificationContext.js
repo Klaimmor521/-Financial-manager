@@ -23,7 +23,7 @@ export const NotificationProvider = ({ children }) => {
       setError(null);
     } catch (err) {
       console.error('Failed to fetch notifications', err);
-      setError('Failed to fetch notifications');
+      setError('Не удалось получить уведомления.');
     } finally {
       setLoading(false);
     }

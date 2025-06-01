@@ -7,12 +7,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 router.use(authMiddleware);
 
 // Маршруты для категорий
-//router.post('/', CategoryController.createCategory);
 router.get('/', CategoryController.getAllCategories);
 router.get('/type/:type', CategoryController.getCategoriesByType);
 router.get('/summary/:type', CategoryController.getCategorySummary);
-//router.get('/:id', CategoryController.getCategoryById);
-//router.put('/:id', CategoryController.updateCategory);
-//router.delete('/:id', CategoryController.deleteCategory);
 
 module.exports = router;

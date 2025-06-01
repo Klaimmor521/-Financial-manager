@@ -17,7 +17,7 @@ export const GoalService = {
       const response = await axios.post(`${API_URL}/goals`, goalData, getAuthHeader());
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.error || 'Error creating goal';
+      const message = error.response?.data?.error || 'Ошибка при создании цели';
       throw new Error(message);
     }
   },
@@ -27,7 +27,7 @@ export const GoalService = {
       const response = await axios.get(`${API_URL}/goals`, getAuthHeader());
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.error || 'Error fetching goals';
+      const message = error.response?.data?.error || 'Ошибка при выборе целей';
       throw new Error(message);
     }
   },
@@ -37,7 +37,7 @@ export const GoalService = {
       const response = await axios.get(`${API_URL}/goals/${goalId}`, getAuthHeader());
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.error || 'Error fetching goal';
+      const message = error.response?.data?.error || 'Цель получения ошибки';
       throw new Error(message);
     }
   },
@@ -47,7 +47,7 @@ export const GoalService = {
       const response = await axios.put(`${API_URL}/goals/${goalId}`, goalData, getAuthHeader());
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.error || 'Error updating goal';
+      const message = error.response?.data?.error || 'Цель обновления ошибок';
       throw new Error(message);
     }
   },
@@ -61,7 +61,7 @@ export const GoalService = {
       );
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.error || 'Error updating goal amount';
+      const message = error.response?.data?.error || 'Ошибка при обновлении суммы цели';
       throw new Error(message);
     }
   },
@@ -71,7 +71,7 @@ export const GoalService = {
       const response = await axios.delete(`${API_URL}/goals/${goalId}`, getAuthHeader());
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.error || 'Error deleting goal';
+      const message = error.response?.data?.error || 'Ошибка при удалении цели';
       throw new Error(message);
     }
   }

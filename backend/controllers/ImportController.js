@@ -132,14 +132,14 @@ class ImportController {
 
         if (parseResult.meta.aborted || (parseResult.errors.length > 0 && parsedRows.length === 0 && actualHeaders.length === 0) ) {
             console.error('[ImportController] CSV critical parsing errors: No data or headers parsed.', parseResult.errors);
-            return res.status(400).json({ success: false, message: 'Error parsing CSV file. Could not extract data or headers.', errors: parseResult.errors });
+            return res.status(400).json({ success: false, message: 'Ошибка при разборе CSV-файла. Не удалось извлечь данные или заголовки.', errors: parseResult.errors });
         }
         
         // Проверка, что заголовки были успешно распознаны (сравнение с EXPECTED_NORMALIZED_HEADERS)
         const essentialHeadersPresent = EXPECTED_NORMALIZED_HEADERS.every(expectedHeader => actualHeaders.includes(expectedHeader));
         if (!essentialHeadersPresent) {
             console.error('[ImportController] Essential headers missing after parsing. Expected:', EXPECTED_NORMALIZED_HEADERS, 'Got:', actualHeaders);
-            return res.status(400).json({ success: false, message: `CSV file is missing one or more required headers. Expected: ${EXPECTED_NORMALIZED_HEADERS.join(', ')}. Found: ${actualHeaders.join(', ')}.` });
+            return res.status(400).json({ success: false, message: `В CSV-файле отсутствует один или несколько обязательных заголовков. Ожидалось: ${EXPECTED_NORMALIZED_HEADERS.join(', ')}. Найдено: ${actualHeaders.join(', ')}.` });
         }
 
         const nonEmptyRows = parsedRows.filter(row => 
@@ -151,7 +151,7 @@ class ImportController {
         if (nonEmptyRows.length === 0) {
             return res.status(200).json({ 
                 success: true, // Технически ошибки нет, просто нет данных для импорта
-                message: 'CSV file contains no data rows to import after filtering.', 
+                message: 'CSV-файл не содержит строк данных для импорта после фильтрации.', 
                 summary: { imported: 0, failedValidation: 0, totalRowsProcessed: 0 } 
             });
         }
@@ -161,7 +161,7 @@ class ImportController {
         if (validationMappingErrors.length > 0 && validTransactions.length === 0) {
              return res.status(400).json({
                 success: false,
-                message: 'CSV data validation and mapping failed. No transactions could be prepared for import.',
+                message: 'Не удалось выполнить проверку и сопоставление данных CSV. Не удалось подготовить транзакции для импорта.',
                 errors: validationMappingErrors,
                 summary: { imported: 0, failedValidation: nonEmptyRows.length, totalRowsProcessed: nonEmptyRows.length }
             });
@@ -182,7 +182,7 @@ class ImportController {
         } else {
             return res.status(200).json({
                success: true, 
-               message: 'No valid transactions found in the CSV to import after validation and mapping.',
+               message: 'В CSV-файле не найдено допустимых транзакций для импорта после проверки и сопоставления.',
                errors: validationMappingErrors,
                summary: { imported: 0, failedValidation: validationMappingErrors.length, totalRowsProcessed: nonEmptyRows.length } 
            });
@@ -195,7 +195,7 @@ class ImportController {
 
         const missingHeaders = EXPECTED_NORMALIZED_HEADERS.filter(h => !actualHeaders.includes(h));
         if (missingHeaders.length > 0) {
-            errors.push({ rowIndex: 'N/A', field: 'Headers', message: `Missing required CSV headers: ${missingHeaders.join(', ')}. Expected: ${EXPECTED_NORMALIZED_HEADERS.join(', ')}` });
+            errors.push({ rowIndex: 'N/A', field: 'Headers', message: `Отсутствуют необходимые заголовки CSV: ${missingHeaders.join(', ')}. Ожидалось: ${EXPECTED_NORMALIZED_HEADERS.join(', ')}` });
             return { validTransactions, errors };
         }
 
@@ -208,12 +208,12 @@ class ImportController {
             // Date (ожидаем YYYY-MM-DD из нашего экспорта)
             const dateStr = row.date ? String(row.date).trim() : null;
             if (!dateStr) {
-                errors.push({ rowIndex, field: 'date', message: 'Date is required.' });
+                errors.push({ rowIndex, field: 'date', message: 'Обязательна дата.' });
                 rowIsValid = false;
             } else {
                 const parsedDate = new Date(dateStr + 'T00:00:00Z'); // Указываем UTC, чтобы избежать смещения дат
                 if (isNaN(parsedDate.getTime())) {
-                    errors.push({ rowIndex, field: 'date', message: `Invalid date format: "${dateStr}". Expected YYYY-MM-DD.` });
+                    errors.push({ rowIndex, field: 'date', message: `Недопустимый формат даты: "${dateStr}". Ожидаемый ГГГГ-ММ-ДД.` });
                     rowIsValid = false;
                 } else {
                     currentTransaction.date = parsedDate.toISOString().split('T')[0];
@@ -223,12 +223,12 @@ class ImportController {
             // Amount
             const amountStr = row.amount ? String(row.amount).trim().replace(',', '.') : null;
             if (!amountStr) {
-                errors.push({ rowIndex, field: 'amount', message: 'Amount is required.' });
+                errors.push({ rowIndex, field: 'amount', message: 'Требуемая сумма.' });
                 rowIsValid = false;
             } else {
                 const amount = parseFloat(amountStr);
                 if (isNaN(amount) || amount <= 0) { // Сумма должна быть положительной
-                    errors.push({ rowIndex, field: 'amount', message: `Invalid amount: "${row.amount}". Must be a positive number.` });
+                    errors.push({ rowIndex, field: 'amount', message: `Недопустимая сумма: "${row.amount}". Должно быть положительное число.` });
                     rowIsValid = false;
                 } else {
                     currentTransaction.amount = amount;
@@ -238,14 +238,14 @@ class ImportController {
             // Type (ожидаем 'income' или 'expense' из нашего экспорта)
             const typeStr = row.type ? String(row.type).trim().toLowerCase() : null;
             if (!typeStr) {
-                errors.push({ rowIndex, field: 'type', message: 'Type is required.' });
+                errors.push({ rowIndex, field: 'type', message: 'Требуется ввести нужный тип.' });
                 rowIsValid = false;
             } else if (typeStr === 'income' || typeStr === 'доход') { // Добавим русский вариант для гибкости
                 currentTransaction.type = 'income';
             } else if (typeStr === 'expense' || typeStr === 'расход') { // Добавим русский вариант
                 currentTransaction.type = 'expense';
             } else {
-                errors.push({ rowIndex, field: 'type', message: `Invalid type: "${row.type}". Expected 'income' or 'expense'.` });
+                errors.push({ rowIndex, field: 'type', message: `Недопустимый тип: "${row.type}". Ожидается 'income' или 'expense'.` });
                 rowIsValid = false;
             }
 
@@ -263,13 +263,13 @@ class ImportController {
 
                     if (!category) {
 
-                        errors.push({ rowIndex, field: 'category', message: `Category "${categoryNameStr}" not found. Transaction will be skipped or assigned to 'Uncategorized' if you implement that.` });
+                        errors.push({ rowIndex, field: 'category', message: `Категория "${categoryNameStr}" не найдена. Если вы это сделаете, транзакция будет пропущена.` });
                         rowIsValid = false; // Пропускаем эту транзакцию
                     } else {
                         currentTransaction.categoryId = category.id;
                     }
                 } catch (e) {
-                    errors.push({ rowIndex, field: 'category', message: `Error processing category "${categoryNameStr}": ${e.message}` });
+                    errors.push({ rowIndex, field: 'category', message: `Ошибка при обработки категории "${categoryNameStr}": ${e.message}` });
                     rowIsValid = false;
                 }
             }
@@ -318,7 +318,7 @@ class ImportController {
                     failedOnSaveCount++;
                     console.error(`[ImportController] DB error saving transaction: ${JSON.stringify(txData)}`, dbError);
                     detailedErrors.push({ 
-                        message: `Failed to save transaction (Date: ${txData.date}, Amount: ${txData.amount}). DB Reason: ${dbError.detail || dbError.message}`,
+                        message: `Не удалось сохранить транзакцию (Date: ${txData.date}, Amount: ${txData.amount}). БД причина: ${dbError.detail || dbError.message}`,
                         data: txData 
                     });
                 }
@@ -336,7 +336,7 @@ class ImportController {
             console.log(`[ImportController] Successfully imported ${importedCount} transactions. Failed to save: ${failedOnSaveCount}`);
             return { 
                 success: true, 
-                message: `Import process finished. Successfully imported: ${importedCount}. Failed to save to DB: ${failedOnSaveCount}.`,
+                message: `Процесс импорта завершен. Импортирован успешно: ${importedCount}. Не удалось сохранить в БД: ${failedOnSaveCount}.`,
                 importedCount,
                 failedOnSaveCount,
                 errorsOnSave: failedOnSaveCount > 0 ? detailedErrors : undefined
@@ -346,7 +346,7 @@ class ImportController {
             console.error('[ImportController] Transaction rolled back due to critical error during save:', e);
             return { 
                 success: false, 
-                message: `Import critically failed: ${e.message}. All valid transactions were rolled back.`,
+                message: `Произошел критический сбой импорта: ${e.message}. Все действительные транзакции были отменены.`,
                 importedCount: 0,
                 failedOnSaveCount: transactionsToSave.length - importedCount, // Все, что не успели закоммитить
                 errorsOnSave: [{ message: e.message, data: "All valid transactions in this batch" }, ...detailedErrors]

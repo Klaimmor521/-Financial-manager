@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { GoalService } from '../services/goalService';
+import { GoalService } from '../services/goalService'; // Предполагается, что goalService уже обрабатывает ошибки и может возвращать русские сообщения, если настроен
 import { toast } from 'react-toastify';
 
 const GoalContext = createContext();
@@ -8,90 +8,109 @@ export const useGoalContext = () => useContext(GoalContext);
 
 export const GoalProvider = ({ children }) => {
   const [goals, setGoals] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false); // Это состояние для индикаторов загрузки, не текст для пользователя
+  const [error, setError] = useState(null); // Ошибка для возможного отображения в UI, если toast не используется
   
-  // Fetch all goals on component mount
+  // Загрузка всех целей при монтировании компонента
   useEffect(() => {
     fetchGoals();
   }, []);
   
-  // Fetch all goals
+  // Загрузить все цели
   const fetchGoals = async () => {
     setLoading(true);
     try {
       const data = await GoalService.getGoals();
       setGoals(data);
-      setError(null);
+      setError(null); // Сбрасываем ошибку при успехе
     } catch (err) {
-      setError(err.message || 'Failed to fetch goals');
-      toast.error(err.message || 'Failed to fetch goals');
+      const errorMessage = err.message || 'Не удалось загрузить цели'; // err.message может быть уже на русском из goalService
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
   
-  // Create a new goal
+  // Создать новую цель
   const createGoal = async (goalData) => {
     setLoading(true);
     try {
       const newGoal = await GoalService.createGoal(goalData);
-      setGoals([...goals, newGoal]);
-      toast.success('Goal created successfully!');
+      setGoals(prevGoals => [...prevGoals, newGoal]); // Более безопасное обновление состояния
+      toast.success('Цель успешно создана!');
+      setError(null);
       return newGoal;
     } catch (err) {
-      setError(err.message || 'Failed to create goal');
-      toast.error(err.message || 'Failed to create goal');
-      throw err;
+      const errorMessage = err.message || 'Не удалось создать цель';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      throw err; // Перебрасываем ошибку, чтобы ее можно было обработать в компоненте
     } finally {
       setLoading(false);
     }
   };
   
-  // Update a goal
+  // Обновить цель
   const updateGoal = async (goalId, goalData) => {
     setLoading(true);
     try {
       const updatedGoal = await GoalService.updateGoal(goalId, goalData);
-      setGoals(goals.map(goal => goal.id === goalId ? updatedGoal : goal));
-      toast.success('Goal updated successfully!');
+      setGoals(prevGoals => prevGoals.map(goal => goal.id === goalId ? updatedGoal : goal));
+      toast.success('Цель успешно обновлена!');
+      setError(null);
       return updatedGoal;
     } catch (err) {
-      setError(err.message || 'Failed to update goal');
-      toast.error(err.message || 'Failed to update goal');
+      const errorMessage = err.message || 'Не удалось обновить цель';
+      setError(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setLoading(false);
     }
   };
   
-  // Update goal amount
-  const updateGoalAmount = async (goalId, amount) => {
+  // Обновить сумму цели
+  const updateGoalAmount = async (goalId, amount, type = 'add') => { // Добавил type для ясности (add/set)
     setLoading(true);
     try {
-      const updatedGoal = await GoalService.updateGoalAmount(goalId, amount);
-      setGoals(goals.map(goal => goal.id === goalId ? updatedGoal : goal));
-      toast.success(`Goal amount updated by ${amount > 0 ? '+' : ''}${amount}!`);
+      // Предполагаем, что GoalService.updateGoalAmount принимает абсолютное изменение или новую сумму
+      // Если amount это дельта:
+      const updatedGoal = await GoalService.updateGoalAmount(goalId, amount); 
+      setGoals(prevGoals => prevGoals.map(goal => goal.id === goalId ? updatedGoal : goal));
+      
+      // Сообщение в зависимости от того, добавили мы или установили новую сумму
+      // Если GoalService.updateGoalAmount возвращает всю цель, можно посмотреть на разницу current_amount
+      // Для простоты, если amount - это дельта:
+      if (type === 'add') {
+        toast.success(`Сумма цели обновлена на ${amount > 0 ? '+' : ''}${amount}!`);
+      } else { // type === 'set' (если бы у тебя была такая логика)
+        toast.success(`Текущая сумма цели установлена: ${updatedGoal.current_amount}!`);
+      }
+      setError(null);
       return updatedGoal;
     } catch (err) {
-      setError(err.message || 'Failed to update goal amount');
-      toast.error(err.message || 'Failed to update goal amount');
+      const errorMessage = err.message || 'Не удалось обновить сумму цели';
+      setError(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setLoading(false);
     }
   };
   
-  // Delete a goal
+  // Удалить цель
   const deleteGoal = async (goalId) => {
     setLoading(true);
     try {
       await GoalService.deleteGoal(goalId);
-      setGoals(goals.filter(goal => goal.id !== goalId));
-      toast.success('Goal deleted successfully!');
+      setGoals(prevGoals => prevGoals.filter(goal => goal.id !== goalId));
+      toast.success('Цель успешно удалена!');
+      setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to delete goal');
-      toast.error(err.message || 'Failed to delete goal');
+      const errorMessage = err.message || 'Не удалось удалить цель';
+      setError(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -103,7 +122,7 @@ export const GoalProvider = ({ children }) => {
       value={{
         goals,
         loading,
-        error,
+        error, // Это состояние ошибки можно использовать в UI, если нужно показать ошибку не через toast
         fetchGoals,
         createGoal,
         updateGoal,

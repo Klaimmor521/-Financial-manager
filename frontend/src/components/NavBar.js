@@ -65,11 +65,11 @@ const NavBar = () => {
   return (
     <nav className="navbar">
       <ul className="navbar-menu">
-        <li><Link to="/dashboard">Dashboard</Link></li>
-        <li><Link to="/transactions">Transactions</Link></li>
-        <li><Link to="/goals">Goals</Link></li>
-        <li><Link to="/reports">Reports</Link></li> { }
-        <li><Link to="/import">Import Data</Link></li>
+        <li><Link to="/dashboard">Главная</Link></li>
+        <li><Link to="/transactions">Транзакции</Link></li>
+        <li><Link to="/goals">Цели</Link></li>
+        <li><Link to="/reports">Отчёты</Link></li> { }
+        <li><Link to="/import">Импорт данных</Link></li>
         <div className="user-info" onClick={() => navigate('/profile')} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
           {avatarUrl ? (
             <img src={avatarUrl} alt="Avatar" style={{ width: '30px', height: '30px', borderRadius: '50%', marginRight: '8px', objectFit: 'cover' }} />
@@ -87,7 +87,7 @@ const NavBar = () => {
         </div>
         <li>
           <button onClick={handleLogout} className="btn btn-outline-danger btn-sm">
-            Logout
+            Выйти
           </button>
         </li>
         <li>

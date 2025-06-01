@@ -87,35 +87,35 @@ const TransactionForm = ({ editTransaction, setEditTransaction, onSuccess }) => 
         tempDate.getMonth() === month - 1 &&
         tempDate.getDate() === day)
       ) {
-        newErrors.date = 'Invalid date entered (e.g., non-existent day/month).';
+        newErrors.date = 'Введена неверная дата (например, несуществующий день/месяц).';
         transactionDateValid = false;
       }
   
     } else {
-      newErrors.date = 'Date is required.';
+      newErrors.date = 'Обязательна дата.';
       transactionDateValid = false;
     }
   
     if (transactionDateValid && transactionDateFormatted && transactionDateFormatted > todayFormatted) {
       // Сравниваем строки "YYYY-MM-DD" > "YYYY-MM-DD"
       // Это сработает, так как лексикографическое сравнение даст правильный результат для этого формата
-      newErrors.date = 'Transaction date cannot be in the future.';
+      newErrors.date = 'Дата транзакции не может быть в будущем.';
     }
     // --- КОНЕЦ ИЗМЕНЕНИЙ ДЛЯ ДАТЫ ---
   
     // Валидация Amount
     if (!data.amount || isNaN(data.amount) || parseFloat(data.amount) <= 0) {
-      newErrors.amount = 'Amount must be a positive number.';
+      newErrors.amount = 'Сумма должна быть положительным числом.';
     }
   
     // Валидация Category
     if (!data.category) {
-      newErrors.category = 'Category is required.';
+      newErrors.category = 'Категория обязательна.';
     }
   
     // Валидация Description
     if (data.description && data.description.length > 50) {
-      newErrors.description = 'Description cannot exceed 50 characters.';
+      newErrors.description = 'Длина описания не должна превышать 50 символов.';
     }
   
     return newErrors;
@@ -164,7 +164,7 @@ const TransactionForm = ({ editTransaction, setEditTransaction, onSuccess }) => 
     } catch (err) {
       console.error('Ошибка при отправке транзакции:', err.response || err);
       // Отображение серверной ошибки
-      const serverError = err.response?.data?.message || err.response?.data?.error || 'Failed to submit transaction.';
+      const serverError = err.response?.data?.message || err.response?.data?.error || 'Не удалось отправить транзакцию.';
       setErrors({ form: serverError }); // Устанавливаем общую ошибку формы
       // toast.error(serverError); // или используем toast
     }

@@ -81,7 +81,7 @@ class ReportController {
             if (!transactions || transactions.length === 0) { // Добавлена проверка на transactions.length === 0
                  console.log(`No transactions found for user ${userId} in period ${startDate} to ${endDate}`);
                  return res.json({ 
-                    message: `No data for ${type} report, year ${year}`, 
+                    message: `Нет данных для ${type} отчет за год ${year}`, 
                     period: { startDate, endDate },
                     data: {
                         totalIncome: 0,
@@ -97,7 +97,7 @@ class ReportController {
             const reportData = await aggregateReportData(transactions);
 
             res.json({
-                message: `Report data for ${type}, year ${year}`,
+                message: `Отчетные данные для ${type}, год ${year}`,
                 period: { startDate, endDate },
                 data: reportData
             });
@@ -171,4 +171,4 @@ class ReportController {
     }
 }
 
-module.exports = ReportController; // Не забудь это!
+module.exports = ReportController;

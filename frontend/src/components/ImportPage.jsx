@@ -16,7 +16,7 @@ const ImportPage = () => {
 
     const handleImport = async () => {
         if (!selectedFile) {
-            toast.error('Please select a CSV file to import.');
+            toast.error('Выберите CSV-файл для импорта.');
             return;
         }
 
@@ -41,14 +41,14 @@ const ImportPage = () => {
             setImportResult(response.data);
         
             if (response.data && response.data.success) { // Добавил проверку на response.data
-                let successMsg = response.data.message || "Import completed.";
+                let successMsg = response.data.message || "Импорт завершен.";
                 if (response.data.summary) {
-                    successMsg += ` (Imported: ${response.data.summary.imported || 0}, Validation Errors: ${response.data.summary.failedValidation || 0}, Save Errors: ${response.data.summary.failedOnSave || 0})`;
+                    successMsg += ` (Импортировано: ${response.data.summary.imported || 0}, Ошибки проверки: ${response.data.summary.failedValidation || 0}, Ошибки сохранения: ${response.data.summary.failedOnSave || 0})`;
                 }
                 console.log('[ImportPage] Showing success toast:', successMsg);
                 toast.success(successMsg);
             } else {
-                const errorMsg = response.data?.message || 'Import reported as not successful by server.';
+                const errorMsg = response.data?.message || 'Сервер сообщил, что импорт не был выполнен успешно.';
                 console.warn('[ImportPage] Import not successful (server-side):', errorMsg, response.data);
                 toast.error(errorMsg);
             }
@@ -56,7 +56,7 @@ const ImportPage = () => {
             console.error('[ImportPage] Axios or other error during import:', err);
             console.error('[ImportPage] Error response data (if any):', err.response?.data);
             
-            const message = err.response?.data?.message || 'An unknown error occurred during import.';
+            const message = err.response?.data?.message || 'Во время импорта произошла неизвестная ошибка.';
             setImportResult({ 
                 success: false, 
                 message, 
@@ -95,16 +95,17 @@ const ImportPage = () => {
             <h2 style={{ textAlign: 'center', marginBottom: '25px' }}>Import Transactions from CSV</h2>
 
             <div className="csv-format-info" style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', border: '1px solid #eee', borderRadius: '4px', fontSize: '0.9em' }}>
-                <p><strong>Please ensure your CSV file has the following headers (in any order, case-insensitive):</strong></p>
+                <p><strong>Пожалуйста, убедитесь, что ваш CSV-файл содержит следующие заголовки (в любом порядке, без учета регистра):</strong></p>
                 <ul>
-                    <li><code>Date</code> (format: YYYY-MM-DD or DD.MM.YYYY)</li>
-                    <li><code>Type</code> (values: "income" or "expense"; or "доход", "расход")</li>
-                    <li><code>Category</code> (name of an existing category)</li>
-                    <li><code>Description</code> (optional)</li>
-                    <li><code>Amount</code> (positive number, e.g., 100.50 or 100,50)</li>
+                    <li><code>Date</code> (формат: YYYY-MM-DD или DD.MM.YYYY)</li>
+                    <li><code>Type</code> (значения: "income" или "expense"; или "доход", "расход")</li>
+                    <li><code>Category</code> (название существующей категории)</li>
+                    <li><code>Description</code> (опционально)</li>
+                    <li><code>Amount</code> (положительное число, например, 100.50 или 100,50)</li>
                 </ul>
-                <p>The first row of your CSV should contain these headers.</p>
-                <p>You can export data from the "Reports" section to get a CSV in the correct format.</p>
+                <p>Первая строка вашего CSV-файла должна содержать эти заголовки.</p>
+                <p>Вы можете экспортировать данные из раздела "Отчеты", чтобы получить CSV в нужном формате.</p>
+                <p>До испорта CSV-файл рекомендуем сохранять в кодировке UTF-8 и в формате CSV (разделители - запятые), если он был отредактирован</p>
             </div>
 
             <div className="file-upload-section" style={{ marginBottom: '20px' }}>
@@ -120,22 +121,22 @@ const ImportPage = () => {
                     disabled={!selectedFile || isImporting}
                     style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '1em' }}
                 >
-                    {isImporting ? 'Importing...' : 'Import Selected CSV'}
+                    {isImporting ? 'Испортируем...' : 'Импорт выбранного файла CSV'}
                 </button>
             </div>
 
             {importResult && (
                 <div className="import-result" style={{ marginTop: '20px', padding: '15px', border: `1px solid ${importResult.success ? '#28a745' : '#dc3545'}`, borderRadius: '4px', backgroundColor: importResult.success ? '#d4edda' : '#f8d7da' }}>
                     <h4 style={{ color: importResult.success ? '#155724' : '#721c24' }}>
-                        Import {importResult.success ? 'Successful' : 'Failed or Partially Successful'}
+                        Импорт {importResult.success ? 'Успешно' : 'Неудачный или частично успешный'}
                     </h4>
                     <p>{importResult.message}</p>
                     {importResult.summary && (
                         <div>
-                            <p>Total rows processed in CSV (after skipping empty): {importResult.summary.totalRowsProcessed ?? (importResult.summary.imported || 0) + (importResult.summary.failedValidation || 0) + (importResult.summary.failedOnSave || 0)}</p>
-                            <p>Successfully imported: {importResult.summary.imported || 0}</p>
-                            {importResult.summary.failedValidation > 0 && <p>Rows with validation errors (not imported): {importResult.summary.failedValidation}</p>}
-                            {importResult.summary.failedOnSave > 0 && <p>Rows that passed validation but failed to save to DB: {importResult.summary.failedOnSave}</p>}
+                            <p>Общее количество строк, обработанных в формате CSV (после пропуска пустых): {importResult.summary.totalRowsProcessed ?? (importResult.summary.imported || 0) + (importResult.summary.failedValidation || 0) + (importResult.summary.failedOnSave || 0)}</p>
+                            <p>Успешно импортированно: {importResult.summary.imported || 0}</p>
+                            {importResult.summary.failedValidation > 0 && <p>Строки с ошибками проверки (не импортированные): {importResult.summary.failedValidation}</p>}
+                            {importResult.summary.failedOnSave > 0 && <p>Строки, которые прошли проверку, но не были сохранены в базе данных: {importResult.summary.failedOnSave}</p>}
                         </div>
                     )}
                     {/* Отображаем ошибки валидации */}
