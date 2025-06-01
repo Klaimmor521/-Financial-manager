@@ -92,7 +92,7 @@ const ImportPage = () => {
 
     return (
         <div className="import-page-container" style={{ padding: '20px', maxWidth: '700px', margin: '20px auto', backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-            <h2 style={{ textAlign: 'center', marginBottom: '25px' }}>Import Transactions from CSV</h2>
+            <h2 style={{ textAlign: 'center', marginBottom: '25px' }}>Импорт транзакций из CSV</h2>
 
             <div className="csv-format-info" style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', border: '1px solid #eee', borderRadius: '4px', fontSize: '0.9em' }}>
                 <p><strong>Пожалуйста, убедитесь, что ваш CSV-файл содержит следующие заголовки (в любом порядке, без учета регистра):</strong></p>
