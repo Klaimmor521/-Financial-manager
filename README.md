@@ -4,7 +4,7 @@ Techologies: HTML, CSS, Node js, React, Javascript, PostgreSQL, Axios, Cors, Exp
 
 ## Install and use:
 1. Write `init git` in terminal in Visual Studio Code.
-2. After that write `git clone: `.
+2. After that write `git clone: https://github.com/Klaimmor521/-Financial-manager.git`.
 3. Then, install dependencies:  `npm run install-deps`.
 4. Create in backend .env file and put there:
   - JWT_SECRET=163ChatGPTClaudeDdeepSeekCode
